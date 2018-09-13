@@ -8,7 +8,8 @@
 #include "printf.h"
 
 //==== System Setting =============================================//
-//#define DEBUG_MODE    1
+//#define DEBUG_MODE  1
+#define SHOW_RATE   1
 //=======================================================================//
 
 //==== Pin Definition ===================================================//
@@ -37,6 +38,13 @@
 //==== Global Constant & Variable =======================================//
 uint16_t BatteryVoltage = 0;
 uint16_t LowBatteryVoltageThreshold = 3200; // mV
+
+#ifdef SHOW_RATE
+uint8_t SendRate = 0;
+uint16_t LoopRate = 0;
+uint16_t SendCount = 0;
+uint16_t LoopCount = 0;
+#endif
 
 bool FunctionMode = false;
 
@@ -156,11 +164,6 @@ uint8_t SelectedFunctionIndex = 1;
 
 //=======================================================================//
 
-#ifdef DEBUG_MODE
-uint16_t sendCount = 0;
-uint16_t loopCount = 0;
-#endif
-
 void setup() {
 #ifdef DEBUG_MODE
   Serial.begin(115200);
@@ -239,8 +242,8 @@ void loop() {
     sendPayloadData(currentMillis);
     refreshControlScreen(currentMillis);
   }
-#ifdef DEBUG_MODE
-  loopCount++;
+#ifdef SHOW_RATE
+  LoopCount++;
 #endif
 }
 
@@ -412,7 +415,7 @@ void setFunctionValues() {
 }
 
 void setControlValues() {
-  //TODO: 
+  //TODO:
 }
 
 void setTime(unsigned long currentMillis) {
@@ -422,12 +425,11 @@ void setTime(unsigned long currentMillis) {
       Timer_Seconds++;
     else
       Timer_Seconds = 0;
-#ifdef DEBUG_MODE
-    Serial.print(sendCount);
-    Serial.print("    ");
-    Serial.println(loopCount);
-    sendCount = 0;
-    loopCount = 0;
+#ifdef SHOW_RATE
+    SendRate = SendCount;
+    LoopRate = LoopCount;
+    SendCount = 0;
+    LoopCount = 0;
 #endif
   }
 }
@@ -464,7 +466,7 @@ void setButtonsValue(unsigned long currentMillis) {
   if (Aux1Bounce.read() == LOW) {
     if (!Aux1Pressed) {
       //For safty prevent arming when throttle is not off
-      if(data.Throttle > 1000) {
+      if (data.Throttle > 1000) {
         BuzzerTimesToBeep = 5;
         return;
       }
@@ -632,8 +634,8 @@ void sendPayloadData(unsigned long currentMillis) {
     RadioSendLastMillis = currentMillis;
     getPayloadData();
     radio.write(&data, sizeof(MyData));
-#ifdef DEBUG_MODE
-    sendCount++;
+#ifdef SHOW_RATE
+    SendCount++;
 #endif
   }
 }
@@ -729,6 +731,9 @@ void refreshControlScreen(unsigned long currentMillis) {
     u8g2.firstPage();
     do {
       drawBattery(4200, 3200, BatteryVoltage, 0);
+#ifdef SHOW_RATE
+      drawRate();
+#endif
       drawTimer();
       drawReceiver();
       drawFlightMode();
@@ -764,6 +769,20 @@ void drawBattery(uint16_t maxVotage, uint16_t minVotage, uint16_t actualVotage, 
   u8g2.drawStr(30, 13, finalText);
 }
 
+void drawRate() {
+  if (Aux1Value == 0) {
+    char text[12] = "";
+    char sendRateText[4] = "";
+    char loopRateText[5] = "";
+    itoa(SendRate, sendRateText, 10);
+    itoa(LoopRate, loopRateText, 10);
+    strcat(text, sendRateText);
+    strcat(text, "|");
+    strcat(text, loopRateText);
+    u8g2.drawStr(80, 13, text);
+  }
+}
+
 void drawTimer() {
   if (Aux1Value > 0) {
     u8g2.drawFrame(91, 1, 37, 15);
@@ -788,9 +807,9 @@ void drawTimer() {
 }
 
 void drawReceiver() {
- char text[7] = "RX: ";
- strcat(text, "01");
- u8g2.drawStr(0, 28, text);
+  char text[7] = "RX: ";
+  strcat(text, "1");
+  u8g2.drawStr(0, 28, text);
 }
 
 void drawFlightMode() {
