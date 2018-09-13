@@ -760,7 +760,7 @@ void drawBattery(uint16_t maxVotage, uint16_t minVotage, uint16_t actualVotage, 
       startX += 3;
       u8g2.drawFrame(startX, 3, 2, 11);
       percentage -= 10;
-    }2
+    }
   }
 
   char finalText[6] = "";
