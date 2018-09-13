@@ -347,7 +347,7 @@ void setFunctionValues() {
           CurrentFunctionIndex = 0;
           break;
         case 1: //Confirm
-          EEPROM.write(RADIO_UNIQUE_ID_EEPROM_ADDRESS, RadioUniqueId);
+          EEPROM.update(RADIO_UNIQUE_ID_EEPROM_ADDRESS, RadioUniqueId);
           break;
         case 2: //Up
           RadioUniqueId++;
@@ -366,7 +366,7 @@ void setFunctionValues() {
           CurrentFunctionIndex = 0;
           break;
         case 1: //Confirm
-          EEPROM.write(RADIO_PA_LEVEL_INDEX_EEPROM_ADDRESS, RadioPaLevelIndex);
+          EEPROM.update(RADIO_PA_LEVEL_INDEX_EEPROM_ADDRESS, RadioPaLevelIndex);
           break;
         case 2: //Up
           RadioPaLevelIndex++;
@@ -385,7 +385,7 @@ void setFunctionValues() {
           CurrentFunctionIndex = 0;
           break;
         case 1: //Confirm
-          EEPROM.write(RADIO_CHANNEL_EEPROM_ADDRESS, RadioChannel);
+          EEPROM.update(RADIO_CHANNEL_EEPROM_ADDRESS, RadioChannel);
           break;
         case 2: //Up
           RadioChannel++;
@@ -760,7 +760,7 @@ void drawBattery(uint16_t maxVotage, uint16_t minVotage, uint16_t actualVotage, 
       startX += 3;
       u8g2.drawFrame(startX, 3, 2, 11);
       percentage -= 10;
-    }
+    }2
   }
 
   char finalText[6] = "";
