@@ -9,7 +9,7 @@
 
 //==== System Setting =============================================//
 #define VERSION_NUMBER     "0.012"
-#define DEBUG_MODE  1
+//#define DEBUG_MODE  1
 #define SHOW_RATE   1
 //=======================================================================//
 
@@ -71,8 +71,8 @@ const uint8_t RX_TRIM_STEP_WIDTH = 2;
 
 const uint8_t RADIO_CHANNEL_LOWER_BOUNDARY = 100;
 const uint8_t RADIO_CHANNEL_UPPER_BOUNDARY = 125;
-const uint8_t RADIO_CHANNEL_EEPROM_ADDRESS = 2;
-uint8_t RadioChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
+//const uint8_t RADIO_CHANNEL_EEPROM_ADDRESS = 2;
+//uint8_t RadioChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
 const uint64_t RADIO_PIPE_OUT = 0xE8E8F0F0E1LL;
 RF24 radio(NRF_CE_PIN, NRF_CSN_PIN);
 
@@ -183,7 +183,11 @@ char Functions[4][15] = {
 };
 uint8_t CurrentFunctionIndex = 0;
 uint8_t SelectedFunctionIndex = 1;
-uint8_t SelectedRxId = 1;
+uint8_t SelectedRxId = CurrentRxId;
+uint8_t RxConfigurationIndex = 0;
+uint8_t RxConfigurationNameIndex = 0;
+char RxConfigurationName[10] = "";
+uint8_t RxConfigurationChannel = 100;
 
 //=======================================================================//
 
@@ -229,21 +233,22 @@ void setup() {
     putRxConfigs();
   }
 
-  FunctionMode = true; //For testing only, remove after.
+  //FunctionMode = true; //For testing only, remove after.
 
   if (FunctionMode) {
     drawFunctionWelcomeScreen();
     getRxConfigs();
 #ifdef DEBUG_MODE
-    for(uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < 10; i++) {
       Serial.println(RxConfigs[i].Id);
     }
 #endif
   } else {
+    RxConfigData rxConfig = getRxConfig(CurrentRxId);
     radio.begin();
     radio.setPALevel(RadioPaLevels[RadioPaLevelIndex].PaValue);
     radio.setAutoAck(false);
-    radio.setChannel(RadioChannel);
+    radio.setChannel(rxConfig.RadioChannel);
     radio.setDataRate(RF24_250KBPS);
     radio.openWritingPipe(RADIO_PIPE_OUT);
     radio.startListening();
@@ -252,7 +257,7 @@ void setup() {
     printf_begin();
     radio.printDetails();
     Serial.print("UniqueId "); Serial.print(RadioUniqueId);
-    Serial.print("    Channel "); Serial.println(RadioChannel);
+    Serial.print("    Channel "); Serial.println(rxConfig.RadioChannel);
 #endif
   }
   resetData();
@@ -300,11 +305,11 @@ void readEeprom() {
     EEPROM.write(CURRENT_RX_ID_EEPROM_ADDRESS, CurrentRxId);
   }
 
-  RadioChannel = EEPROM.read(RADIO_CHANNEL_EEPROM_ADDRESS);
-  if (RadioChannel < RADIO_CHANNEL_LOWER_BOUNDARY || RadioChannel > RADIO_CHANNEL_UPPER_BOUNDARY) {
-    RadioChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
-    EEPROM.write(RADIO_CHANNEL_EEPROM_ADDRESS, RadioChannel);
-  }
+  //  RadioChannel = EEPROM.read(RADIO_CHANNEL_EEPROM_ADDRESS);
+  //  if (RadioChannel < RADIO_CHANNEL_LOWER_BOUNDARY || RadioChannel > RADIO_CHANNEL_UPPER_BOUNDARY) {
+  //    RadioChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
+  //    EEPROM.write(RADIO_CHANNEL_EEPROM_ADDRESS, RadioChannel);
+  //  }
 }
 
 void putRxConfigs() {
@@ -435,7 +440,7 @@ void setFunctionValues() {
         case 3: //Down
           RadioUniqueId--;
           break;
-        //case 4: //Move Position TODO: make it easier to change value by each digit
+          //case 4: //Move Position TODO: make it easier to change value by each digit
       }
       if (RadioUniqueId < RADIO_UNIQUE_ID_LOWER_BOUNDARY) RadioUniqueId = RADIO_UNIQUE_ID_UPPER_BOUNDARY;
       if (RadioUniqueId > RADIO_UNIQUE_ID_UPPER_BOUNDARY) RadioUniqueId = RADIO_UNIQUE_ID_LOWER_BOUNDARY;
@@ -467,7 +472,15 @@ void setFunctionValues() {
           CurrentFunctionIndex = 0;
           break;
         case 1: //Confirm
+#ifdef DEBUG_MODE
+  Serial.print("SelectedRxId: "); Serial.println(SelectedRxId);
+#endif
           CurrentRxId = SelectedRxId;
+          EEPROM.update(CURRENT_RX_ID_EEPROM_ADDRESS, CurrentRxId);
+          strcpy(RxConfigurationName, RxConfigs[CurrentRxId - 1].Name);
+          RxConfigurationChannel = RxConfigs[CurrentRxId - 1].RadioChannel;
+          RxConfigurationIndex = 0;
+          RxConfigurationNameIndex = 0;
           CurrentFunctionIndex = 10; // 10 for RX Configuration function
           break;
         case 2: //Up
@@ -495,21 +508,41 @@ void setFunctionValues() {
       //Currently at RX Configuration function
       switch (pressedButtonIndex) {
         case 0: //Cancel
-          //some clean up
           CurrentFunctionIndex = 0;
           break;
         case 1: //Confirm
-          //some clean up
-          //save cooresponding value
+          strcpy(RxConfigs[CurrentRxId - 1].Name, RxConfigurationName);
+          RxConfigs[CurrentRxId - 1].RadioChannel = RxConfigurationChannel;
+          EEPROM.put(RX_CONFIG_EEPROM_START_ADDRESS + (CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES, RxConfigs[CurrentRxId - 1]);
           break;
         case 2: //Up
-          //change value
+          switch (RxConfigurationIndex) {
+            case 0: //RX Name
+              break;
+            case 1: //RX Channel
+              RxConfigurationChannel++;
+              if (RxConfigurationChannel > RADIO_CHANNEL_UPPER_BOUNDARY) RxConfigurationChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
+          }
           break;
         case 3: //Down
-          //change value
+          switch (RxConfigurationIndex) {
+            case 0: //RX Name
+              break;
+            case 1: //RX Channel
+              RxConfigurationChannel--;
+              if (RxConfigurationChannel < RADIO_CHANNEL_LOWER_BOUNDARY) RxConfigurationChannel = RADIO_CHANNEL_UPPER_BOUNDARY;
+          }
           break;
         case 4: //Move Position
-          //TODO:
+          if (RxConfigurationIndex == 0) {
+            RxConfigurationNameIndex++;
+            if (RxConfigurationNameIndex > 8) { //TODO: Make it globle variable
+              RxConfigurationNameIndex = 0;
+              RxConfigurationIndex = 1;
+            }
+          } else {
+            RxConfigurationIndex = 0;
+          }
           break;
       }
     }
@@ -790,16 +823,16 @@ void drawFunctionMainScreen() {
   uint8_t functionCount = sizeof(Functions) / sizeof(Functions[0]);
   uint8_t menuItemStartX = 10;
   uint8_t menuItemStartY = 25;
-  uint8_t lineHight = 12;
+  uint8_t lineHeight = 12;
   for (uint8_t i = 0; i < functionCount; i++) {
     u8g2.drawStr(menuItemStartX, menuItemStartY, Functions[i]);
-    menuItemStartY += lineHight;
+    menuItemStartY += lineHeight;
   }
   uint8_t selectionBoxStartX = 1;
   uint8_t selectionBoxStartY = 19;
   uint8_t selectionBoxWidth = 4;
   uint8_t selectionBoxHeight = 4;
-  selectionBoxStartY += lineHight * (SelectedFunctionIndex - 1);
+  selectionBoxStartY += lineHeight * (SelectedFunctionIndex - 1);
   u8g2.drawBox(selectionBoxStartX, selectionBoxStartY, selectionBoxWidth, selectionBoxHeight);
 }
 
@@ -823,8 +856,8 @@ void drawFunctionRadioPaLevelScreen() {
 
 void drawFunctionRxSelectionScreen() {
   u8g2.drawStr(0, 10, "Select RX");
-  char finalText[3] = "";
-  char rxIdText[2] = "";
+  char finalText[4] = "";
+  char rxIdText[3] = "";
   itoa(CurrentRxId, rxIdText, 10);
   if (CurrentRxId < 10) {
     strcat(finalText, "0");
@@ -841,10 +874,10 @@ void drawFunctionRxSelectionScreen() {
   uint8_t startRxId = (currentPage - 1) * pageSize + 1;
   uint8_t menuItemStartX = 10;
   uint8_t menuItemStartY = 25;
-  uint8_t lineHight = 12;
+  uint8_t lineHeight = 12;
 
   for (uint8_t i = 0; i < pageSize; i++) {
-    if(startRxId + i > CURRENT_RX_ID_UPPER_BOUNDARY) break;
+    if (startRxId + i > CURRENT_RX_ID_UPPER_BOUNDARY) break;
     char finalText[3] = "";
     char rxIdText[2] = "";
     uint8_t rxId = RxConfigs[startRxId + i - 1].Id;
@@ -856,7 +889,7 @@ void drawFunctionRxSelectionScreen() {
     strcat(finalText, "  ");
     strcat(finalText, RxConfigs[startRxId + i - 1].Name);
     u8g2.drawStr(menuItemStartX, menuItemStartY, finalText);
-    menuItemStartY += lineHight;
+    menuItemStartY += lineHeight;
   }
   uint8_t selectionBoxStartX = 1;
   uint8_t selectionBoxStartY = 19;
@@ -864,7 +897,7 @@ void drawFunctionRxSelectionScreen() {
   uint8_t selectionBoxHeight = 4;
   uint8_t selectionIndexOnPage = SelectedRxId % pageSize;
   if (selectionIndexOnPage == 0) selectionIndexOnPage = 4;
-  selectionBoxStartY += lineHight * (selectionIndexOnPage - 1);
+  selectionBoxStartY += lineHeight * (selectionIndexOnPage - 1);
   u8g2.drawBox(selectionBoxStartX, selectionBoxStartY, selectionBoxWidth, selectionBoxHeight);
 }
 
@@ -880,15 +913,32 @@ void drawFunctionRxConfigurationScreen() {
   u8g2.drawStr(115, 10, finalText);
   u8g2.drawLine(0, 15, 128, 15);
 
-  
-}
+  uint8_t menuItemStartY = 25;
+  uint8_t lineHeight = 12;
+  char rxNameText[17] = "Name: ";
+  strcat(rxNameText, RxConfigurationName);
+  u8g2.drawStr(0, menuItemStartY, rxNameText);
 
-//void drawFunctionRadioChannelScreen() {
-//  u8g2.drawStr(0, 10, "Radio Channel");
-//  u8g2.drawLine(0, 15, 128, 15);
-//  char strRadioChannel[3];
-//  u8g2.drawStr(50, 40, itoa(RadioChannel, strRadioChannel, 10));
-//}
+  char rxChannelText[13] = "Channel: ";
+  char channelText[4] = "";
+  itoa(RxConfigurationChannel, channelText, 10);
+  strcat(rxChannelText, channelText);
+  u8g2.drawStr(0, menuItemStartY + lineHeight, rxChannelText);
+
+  if (RxConfigurationIndex == 0) {
+    uint8_t firstLetterStartX = 36;
+    uint8_t letterWidth = 5;
+    uint8_t startX = firstLetterStartX+ RxConfigurationNameIndex * letterWidth + RxConfigurationNameIndex;
+    u8g2.drawLine(startX, menuItemStartY + 1, startX + letterWidth, menuItemStartY + 1);
+  } else if (RxConfigurationIndex == 1) {
+    uint8_t channelNumberStartX = 54;
+    uint8_t channelNumberWidth = 17;
+    u8g2.drawLine(channelNumberStartX, menuItemStartY + lineHeight + 1, channelNumberStartX + channelNumberWidth, menuItemStartY + lineHeight + 1);
+  } else {
+
+  }
+
+}
 
 void drawFunctionWipeEepromScreen() {
   u8g2.drawStr(0, 10, "Wipe All Data");
