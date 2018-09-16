@@ -71,8 +71,6 @@ const uint8_t RX_TRIM_STEP_WIDTH = 2;
 
 const uint8_t RADIO_CHANNEL_LOWER_BOUNDARY = 100;
 const uint8_t RADIO_CHANNEL_UPPER_BOUNDARY = 125;
-//const uint8_t RADIO_CHANNEL_EEPROM_ADDRESS = 2;
-//uint8_t RadioChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
 const uint64_t RADIO_PIPE_OUT = 0xE8E8F0F0E1LL;
 RF24 radio(NRF_CE_PIN, NRF_CSN_PIN);
 
@@ -262,6 +260,11 @@ void setup() {
   }
   resetData();
   readBatteryVoltage(10001); //Dummy value > BatteryVoltageReadInterval to force battery read once
+
+  //delete after
+  char testStr[3] = "";
+  getRxIdStr(testStr, 1);
+  Serial.println(testStr);
 }
 
 void loop() {
@@ -304,12 +307,6 @@ void readEeprom() {
     CurrentRxId = CURRENT_RX_ID_LOWER_BOUNDARY;
     EEPROM.write(CURRENT_RX_ID_EEPROM_ADDRESS, CurrentRxId);
   }
-
-  //  RadioChannel = EEPROM.read(RADIO_CHANNEL_EEPROM_ADDRESS);
-  //  if (RadioChannel < RADIO_CHANNEL_LOWER_BOUNDARY || RadioChannel > RADIO_CHANNEL_UPPER_BOUNDARY) {
-  //    RadioChannel = RADIO_CHANNEL_LOWER_BOUNDARY;
-  //    EEPROM.write(RADIO_CHANNEL_EEPROM_ADDRESS, RadioChannel);
-  //  }
 }
 
 void putRxConfigs() {
@@ -322,7 +319,15 @@ void putRxConfigs() {
     rxConfig.YawTrim = 0;
     rxConfig.PitchTrim = 0;
     rxConfig.RollTrim = 0;
-    strcpy(rxConfig.Name, "Sample RX");
+    char rxName[6] = "RX ";
+    char rxIdText[3] = "";
+    itoa(i, rxIdText, 10);
+    if (i < 10) {
+      strcat(rxName, "0");
+    }
+    strcat(rxName, rxIdText);
+    strcat(rxName, "    ");
+    strcpy(rxConfig.Name, rxName);
     EEPROM.put(startAddress, rxConfig);
   }
 }
@@ -347,6 +352,7 @@ void clearEeprom() {
   for (int i = 0 ; i < EEPROM.length() ; i++) {
     EEPROM.update(i, 0);
   }
+  softReset();
 }
 
 void setFunctionValues() {
@@ -473,7 +479,7 @@ void setFunctionValues() {
           break;
         case 1: //Confirm
 #ifdef DEBUG_MODE
-  Serial.print("SelectedRxId: "); Serial.println(SelectedRxId);
+          Serial.print("SelectedRxId: "); Serial.println(SelectedRxId);
 #endif
           CurrentRxId = SelectedRxId;
           EEPROM.update(CURRENT_RX_ID_EEPROM_ADDRESS, CurrentRxId);
@@ -518,6 +524,8 @@ void setFunctionValues() {
         case 2: //Up
           switch (RxConfigurationIndex) {
             case 0: //RX Name
+              RxConfigurationName[RxConfigurationNameIndex] -= 1; 
+              if(RxConfigurationName[RxConfigurationNameIndex] < 32) RxConfigurationName[RxConfigurationNameIndex] = 126;
               break;
             case 1: //RX Channel
               RxConfigurationChannel++;
@@ -527,6 +535,14 @@ void setFunctionValues() {
         case 3: //Down
           switch (RxConfigurationIndex) {
             case 0: //RX Name
+#ifdef DEBUG_MODE
+  Serial.println(RxConfigurationName);
+#endif
+              RxConfigurationName[RxConfigurationNameIndex] += 1; 
+              if(RxConfigurationName[RxConfigurationNameIndex] > 126) RxConfigurationName[RxConfigurationNameIndex] = 32;
+#ifdef DEBUG_MODE
+  Serial.println(RxConfigurationName);
+#endif
               break;
             case 1: //RX Channel
               RxConfigurationChannel--;
@@ -841,10 +857,6 @@ void drawFunctionTransmitterIdScreen() {
   u8g2.drawLine(0, 15, 128, 15);
   char strRadioUniqueId[5] = "";
   itoa(RadioUniqueId, strRadioUniqueId, 10);
-#ifdef DEBUG_MODE
-  Serial.println(RadioUniqueId);
-  Serial.println(strRadioUniqueId);
-#endif
   u8g2.drawStr(50, 40, strRadioUniqueId);
 }
 
@@ -928,7 +940,7 @@ void drawFunctionRxConfigurationScreen() {
   if (RxConfigurationIndex == 0) {
     uint8_t firstLetterStartX = 36;
     uint8_t letterWidth = 5;
-    uint8_t startX = firstLetterStartX+ RxConfigurationNameIndex * letterWidth + RxConfigurationNameIndex;
+    uint8_t startX = firstLetterStartX + RxConfigurationNameIndex * letterWidth + RxConfigurationNameIndex;
     u8g2.drawLine(startX, menuItemStartY + 1, startX + letterWidth, menuItemStartY + 1);
   } else if (RxConfigurationIndex == 1) {
     uint8_t channelNumberStartX = 54;
@@ -1078,55 +1090,54 @@ void drawAuxStatus(uint8_t startX, uint8_t startY, char channel[2], uint16_t val
   u8g2.drawBox(startX + 13, startY - 8, len, 8);
 }
 
-//void drawJoystick(byte startX, byte startY, byte valueX, byte valueY) {
-//  u8g2.drawFrame(startX, startY, 40, 40);
-//  float positionX = map(valueX, 0, 255, startX + 4, startX + 40 - 4);
-//  float positionY = map(valueY, 0, 255, startY + 40 - 4, startY + 4);
-//  if (positionX < startX + 4)
-//    positionX = startX + 4;
-//  if (positionX > startX + 40 - 5)
-//    positionX = startX + 40 - 5;
-//  if (positionY < startY + 4)
-//    positionY = startY + 4;
-//  if (positionY > startY + 40 - 5)
-//    positionY = startY + 40 - 5;
-//  u8g2.drawDisc(positionX, positionY, 3, U8G2_DRAW_ALL);
-//}
+void drawJoystick(byte startX, byte startY, byte valueX, byte valueY) {
+  u8g2.drawFrame(startX, startY, 40, 40);
+  float positionX = map(valueX, 0, 255, startX + 4, startX + 40 - 4);
+  float positionY = map(valueY, 0, 255, startY + 40 - 4, startY + 4);
+  if (positionX < startX + 4)
+    positionX = startX + 4;
+  if (positionX > startX + 40 - 5)
+    positionX = startX + 40 - 5;
+  if (positionY < startY + 4)
+    positionY = startY + 4;
+  if (positionY > startY + 40 - 5)
+    positionY = startY + 40 - 5;
+  u8g2.drawDisc(positionX, positionY, 3, U8G2_DRAW_ALL);
+}
 
-// void drawSignal(byte percentage, byte startX) {
-//   if (percentage > 0) {
-//     u8g2.drawLine(startX, 13, startX, 15); //20%
-//     u8g2.drawLine(startX + 1, 13, startX + 1, 15);
-//   }
-//   if (percentage > 20) {
-//     u8g2.drawLine(startX + 4, 10, startX + 4, 15);
-//     u8g2.drawLine(startX + 5, 10, startX + 5, 15);
-//   }
-//   if (percentage > 40) {
-//     u8g2.drawLine(startX + 8, 7, startX + 8, 15);
-//     u8g2.drawLine(startX + 9, 7, startX + 9, 15);
-//   }
-//   if (percentage > 60) {
-//     u8g2.drawLine(startX + 12, 4, startX + 12, 15);
-//     u8g2.drawLine(startX + 13, 4, startX + 13, 15);
-//   }
-//   if (percentage > 80) {
-//     u8g2.drawLine(startX + 16, 1, startX + 16, 15);
-//     u8g2.drawLine(startX + 17, 1, startX + 17, 15);
-//   }
-// }
+ void drawSignal(byte percentage, byte startX) {
+   if (percentage > 0) {
+     u8g2.drawLine(startX, 13, startX, 15); //20%
+     u8g2.drawLine(startX + 1, 13, startX + 1, 15);
+   }
+   if (percentage > 20) {
+     u8g2.drawLine(startX + 4, 10, startX + 4, 15);
+     u8g2.drawLine(startX + 5, 10, startX + 5, 15);
+   }
+   if (percentage > 40) {
+     u8g2.drawLine(startX + 8, 7, startX + 8, 15);
+     u8g2.drawLine(startX + 9, 7, startX + 9, 15);
+   }
+   if (percentage > 60) {
+     u8g2.drawLine(startX + 12, 4, startX + 12, 15);
+     u8g2.drawLine(startX + 13, 4, startX + 13, 15);
+   }
+   if (percentage > 80) {
+     u8g2.drawLine(startX + 16, 1, startX + 16, 15);
+     u8g2.drawLine(startX + 17, 1, startX + 17, 15);
+   }
+ }
 
-//TODO: this looks like a joke
+//TODO: investigate why this function does not work
 void getRxIdStr(char* outStr, uint8_t rxId) {
-  char finalText[2] = "";
-  char rxIdText[2] = "";
+  char finalText[3] = "";
+  char rxIdText[3] = "";
   itoa(rxId, rxIdText, 10);
   if (rxId < 10) {
     strcat(finalText, "0");
   }
   strcat(finalText, rxIdText);
-  outStr[0] = finalText[0];
-  outStr[1] = finalText[1];
+  strcpy(outStr, finalText);
 }
 
 void sort(int *a, int n) {
@@ -1139,5 +1150,9 @@ void sort(int *a, int n) {
     }
     a[k + 1] = j;
   }
+}
+
+void softReset() {
+  asm volatile ("  jmp 0");
 }
 
