@@ -18,7 +18,7 @@
 //=======================================================================//
 
 //==== Global Constant & Variable =======================================//
-const uint16_t PPM_FRAME_LENGTH = 2700;
+const uint16_t PPM_FRAME_LENGTH = 24000;
 const uint16_t PPM_PULSE_LENGTH = 400;
 const uint8_t CHANNEL_COUNT = 10;
 const uint16_t RADIO_TX_ID = 1005;
@@ -209,7 +209,7 @@ ISR(TIMER1_COMPA_vect) {
 #endif
   if ( state ) {
     //end pulse
-    PORTD = PORTD & ~B00000100; // turn pin 2 off. Could also use: digitalWrite(sigPin,0)
+    PORTD = PORTD & ~B00000100; // turn pin 2 off.
     OCR1A = PPM_PULSE_LENGTH * CLOCK_MULTIPLIER;
     state = false;
   }else {
@@ -217,7 +217,7 @@ ISR(TIMER1_COMPA_vect) {
     static byte cur_chan_numb;
     static unsigned int calc_rest;
 
-    PORTD = PORTD | B00000100; // turn pin 2 on. Could also use: digitalWrite(sigPin,1)
+    PORTD = PORTD | B00000100; // turn pin 2 on.
     state = true;
 
     if (cur_chan_numb >= CHANNEL_COUNT) {
