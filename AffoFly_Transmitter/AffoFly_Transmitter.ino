@@ -48,6 +48,7 @@ uint16_t LoopCount = 0;
 #endif
 
 bool FunctionMode = false;
+bool TrimmingMode = false;
 
 const uint8_t RADIO_UNIQUE_ID_EEPROM_ADDRESS = 0; //(2 bytes 0-1)
 const uint16_t RADIO_UNIQUE_ID_LOWER_BOUNDARY = 1000;
@@ -179,6 +180,8 @@ char Functions[4][15] = {
   "RX Selection",
   "Wipe All Data"
 };
+
+uint8_t CurrentTrimmingIndex = 0; // 0=>Yaw, 1=>Throttle, 2=>Pitch, 3=>Roll
 uint8_t CurrentFunctionIndex = 0;
 uint8_t SelectedFunctionIndex = 1;
 uint8_t SelectedRxId = CurrentRxId;
@@ -279,7 +282,6 @@ void loop() {
     readBatteryVoltage(currentMillis);
     setTime(currentMillis);
     setButtonsValue(currentMillis);
-    setControlValues();
     beepBuzzer(currentMillis);
     sendPayloadData(currentMillis);
     refreshControlScreen(currentMillis);
@@ -524,8 +526,8 @@ void setFunctionValues() {
         case 2: //Up
           switch (RxConfigurationIndex) {
             case 0: //RX Name
-              RxConfigurationName[RxConfigurationNameIndex] -= 1; 
-              if(RxConfigurationName[RxConfigurationNameIndex] < 32) RxConfigurationName[RxConfigurationNameIndex] = 126;
+              RxConfigurationName[RxConfigurationNameIndex] -= 1;
+              if (RxConfigurationName[RxConfigurationNameIndex] < 32) RxConfigurationName[RxConfigurationNameIndex] = 126;
               break;
             case 1: //RX Channel
               RxConfigurationChannel++;
@@ -536,12 +538,12 @@ void setFunctionValues() {
           switch (RxConfigurationIndex) {
             case 0: //RX Name
 #ifdef DEBUG_MODE
-  Serial.println(RxConfigurationName);
+              Serial.println(RxConfigurationName);
 #endif
-              RxConfigurationName[RxConfigurationNameIndex] += 1; 
-              if(RxConfigurationName[RxConfigurationNameIndex] > 126) RxConfigurationName[RxConfigurationNameIndex] = 32;
+              RxConfigurationName[RxConfigurationNameIndex] += 1;
+              if (RxConfigurationName[RxConfigurationNameIndex] > 126) RxConfigurationName[RxConfigurationNameIndex] = 32;
 #ifdef DEBUG_MODE
-  Serial.println(RxConfigurationName);
+              Serial.println(RxConfigurationName);
 #endif
               break;
             case 1: //RX Channel
@@ -566,10 +568,6 @@ void setFunctionValues() {
       //Other function
     }
   }
-}
-
-void setControlValues() {
-  //TODO:
 }
 
 void setTime(unsigned long currentMillis) {
@@ -609,6 +607,7 @@ uint16_t mapJoystickValues(uint16_t val, uint16_t lower, uint16_t middle, uint16
   return reverse ? 3000 - val : val;
 }
 
+//TODO: Implement trimming function
 void setButtonsValue(unsigned long currentMillis) {
   Aux1Bounce.update();
   Aux2Bounce.update();
@@ -619,17 +618,59 @@ void setButtonsValue(unsigned long currentMillis) {
 
   if (Aux1Bounce.read() == LOW) {
     if (!Aux1Pressed) {
-      //For safty prevent arming when throttle is not off
-      if (data.Throttle > 1000) {
-        BuzzerTimesToBeep = 5;
-        return;
+      if (TrimmingMode) {
+        switch (CurrentTrimmingIndex) {
+          case 0: //Yaw
+            if (RxConfigs[CurrentRxId - 1].YawTrim >= RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].YawTrim = RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].YawTrim++;
+              if (RxConfigs[CurrentRxId - 1].YawTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+          case 1: //Throttle
+            if (RxConfigs[CurrentRxId - 1].ThrottleTrim >= RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].ThrottleTrim = RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].ThrottleTrim++;
+              if (RxConfigs[CurrentRxId - 1].ThrottleTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+          case 2: //Pitch
+            if (RxConfigs[CurrentRxId - 1].PitchTrim >= RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].PitchTrim = RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].PitchTrim++;
+              if (RxConfigs[CurrentRxId - 1].PitchTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+          case 3: //Roll
+            if (RxConfigs[CurrentRxId - 1].RollTrim >= RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].RollTrim = RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].RollTrim++;
+              if (RxConfigs[CurrentRxId - 1].RollTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+        }
+        EEPROM.put(RX_CONFIG_EEPROM_START_ADDRESS + (CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES, RxConfigs[CurrentRxId - 1]);
+      } else {
+        //For safty prevent arming when throttle is not off
+        if (data.Throttle > 1000) {
+          BuzzerTimesToBeep = 5;
+          return;
+        }
+        Aux1Value++;
+        if (Aux1Value > AUX1_VALUE_UPPER_BOUNDARY) {
+          Aux1Value = AUX1_VALUE_LOWER_BOUNDARY;
+        }
+        Aux1Pressed = true;
+        BuzzerTimesToBeep = Aux1Value + 1;
       }
-      Aux1Value++;
-      if (Aux1Value > AUX1_VALUE_UPPER_BOUNDARY) {
-        Aux1Value = AUX1_VALUE_LOWER_BOUNDARY;
-      }
-      Aux1Pressed = true;
-      BuzzerTimesToBeep = Aux1Value + 1;
     }
   } else {
     Aux1Pressed = false;
@@ -650,12 +691,17 @@ void setButtonsValue(unsigned long currentMillis) {
 
   if (Aux3Bounce.read() == LOW) {
     if (!Aux3Pressed) {
-      Aux3Value++;
-      if (Aux3Value > AUX3_VALUE_UPPER_BOUNDARY) {
-        Aux3Value = AUX3_VALUE_LOWER_BOUNDARY;
+      if (TrimmingMode) {
+        CurrentTrimmingIndex++;
+        if (CurrentTrimmingIndex > 3) CurrentTrimmingIndex = 0;
+      } else {
+        Aux3Value++;
+        if (Aux3Value > AUX3_VALUE_UPPER_BOUNDARY) {
+          Aux3Value = AUX3_VALUE_LOWER_BOUNDARY;
+        }
+        Aux3Pressed = true;
+        BuzzerTimesToBeep = Aux3Value + 1;
       }
-      Aux3Pressed = true;
-      BuzzerTimesToBeep = Aux3Value + 1;
     }
   } else {
     Aux3Pressed = false;
@@ -676,29 +722,73 @@ void setButtonsValue(unsigned long currentMillis) {
 
   if (Aux5Bounce.read() == LOW) {
     if (!Aux5Pressed) {
-      Aux5Value++;
-      if (Aux5Value > AUX5_VALUE_UPPER_BOUNDARY) {
-        Aux5Value = AUX5_VALUE_LOWER_BOUNDARY;
+      if (TrimmingMode) {
+        switch (CurrentTrimmingIndex) {
+          case 0: //Yaw
+            if (RxConfigs[CurrentRxId - 1].YawTrim <= -RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].YawTrim = -RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].YawTrim--;
+              if (RxConfigs[CurrentRxId - 1].YawTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+          case 1: //Throttle
+            if (RxConfigs[CurrentRxId - 1].ThrottleTrim <= -RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].ThrottleTrim = -RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].ThrottleTrim--;
+              if (RxConfigs[CurrentRxId - 1].ThrottleTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+          case 2: //Pitch
+            if (RxConfigs[CurrentRxId - 1].PitchTrim <= -RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].PitchTrim = -RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].PitchTrim--;
+              if (RxConfigs[CurrentRxId - 1].PitchTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+          case 3: //Roll
+            if (RxConfigs[CurrentRxId - 1].RollTrim <= -RX_TRIM_STEP_RANGE) {
+              RxConfigs[CurrentRxId - 1].RollTrim = -RX_TRIM_STEP_RANGE;
+            } else {
+              RxConfigs[CurrentRxId - 1].RollTrim--;
+              if (RxConfigs[CurrentRxId - 1].RollTrim == 0) BuzzerTimesToBeep = 3;
+              else BuzzerTimesToBeep = 1;
+            }
+            break;
+        }
+        EEPROM.put(RX_CONFIG_EEPROM_START_ADDRESS + (CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES, RxConfigs[CurrentRxId - 1]);
+      } else {
+        Aux5Value++;
+        if (Aux5Value > AUX5_VALUE_UPPER_BOUNDARY) {
+          Aux5Value = AUX5_VALUE_LOWER_BOUNDARY;
+        }
+        Aux5Pressed = true;
+        BuzzerTimesToBeep = Aux5Value + 1;
       }
-      Aux5Pressed = true;
-      BuzzerTimesToBeep = Aux5Value + 1;
     }
   } else {
     Aux5Pressed = false;
   }
 
   if (MenuBounce.read() == LOW) {
-    if (Aux1Value > 0) {
-      // Any kinds of Armed state, prevent from disconnection
-      BuzzerTimesToBeep = 10;
-    } else {
-      if (!MenuPressed) {
-        MenuPressed = true;
+    if (!MenuPressed) {
+      if (TrimmingMode) {
         BuzzerTimesToBeep = 1;
+        TrimmingMode = false;
+      } else {
+        BuzzerTimesToBeep = 5;
+        TrimmingMode = true;
       }
+      CurrentTrimmingIndex = 0;
+      MenuPressed = true;
+    } else {
+      MenuPressed = false;
     }
-  } else {
-    MenuPressed = false;
   }
 }
 
@@ -747,10 +837,10 @@ void beepBuzzer(unsigned long currentMillis) {
 void getPayloadData() {
   data.UniqueId = RadioUniqueId;
   //Get the middle value for Yaw, Pitch and Roll from Serial Monitor
-  data.Throttle = mapJoystickValues(analogRead(THROTTLE_PIN), 0, 511, 1023, false );
-  data.Yaw      = mapJoystickValues(analogRead(YAW_PIN),  0, 515, 1023, true );
-  data.Pitch    = mapJoystickValues(analogRead(PITCH_PIN), 0, 513, 1023, false );
-  data.Roll     = mapJoystickValues(analogRead(ROLL_PIN), 0, 504, 1023, true );
+  data.Throttle = mapJoystickValues(analogRead(THROTTLE_PIN), 0, 511, 1023, false ) + RxConfigs[CurrentRxId - 1].ThrottleTrim * RX_TRIM_STEP_WIDTH;
+  data.Yaw      = mapJoystickValues(analogRead(YAW_PIN),  0, 515, 1023, true ) + RxConfigs[CurrentRxId - 1].YawTrim * RX_TRIM_STEP_WIDTH;
+  data.Pitch    = mapJoystickValues(analogRead(PITCH_PIN), 0, 513, 1023, false ) + RxConfigs[CurrentRxId - 1].PitchTrim * RX_TRIM_STEP_WIDTH;
+  data.Roll     = mapJoystickValues(analogRead(ROLL_PIN), 0, 504, 1023, true ) + RxConfigs[CurrentRxId - 1].RollTrim * RX_TRIM_STEP_WIDTH;
   data.Aux1     = map(Aux1Value, AUX1_VALUE_LOWER_BOUNDARY, AUX1_VALUE_UPPER_BOUNDARY, 1000, 2000);
   data.Aux2     = map(Aux2Value, AUX2_VALUE_LOWER_BOUNDARY, AUX2_VALUE_UPPER_BOUNDARY, 1000, 2000);
   data.Aux3     = map(Aux3Value, AUX3_VALUE_LOWER_BOUNDARY, AUX3_VALUE_UPPER_BOUNDARY, 1000, 2000);
@@ -868,13 +958,8 @@ void drawFunctionRadioPaLevelScreen() {
 
 void drawFunctionRxSelectionScreen() {
   u8g2.drawStr(0, 10, "Select RX");
-  char finalText[4] = "";
-  char rxIdText[3] = "";
-  itoa(CurrentRxId, rxIdText, 10);
-  if (CurrentRxId < 10) {
-    strcat(finalText, "0");
-  }
-  strcat(finalText, rxIdText);
+  char finalText[3] = "";
+  getRxIdStr(finalText, CurrentRxId);
   u8g2.drawStr(115, 10, finalText);
   u8g2.drawLine(0, 15, 128, 15);
 
@@ -890,14 +975,9 @@ void drawFunctionRxSelectionScreen() {
 
   for (uint8_t i = 0; i < pageSize; i++) {
     if (startRxId + i > CURRENT_RX_ID_UPPER_BOUNDARY) break;
-    char finalText[3] = "";
-    char rxIdText[2] = "";
+    char finalText[15] = "";
     uint8_t rxId = RxConfigs[startRxId + i - 1].Id;
-    itoa(rxId, rxIdText, 10);
-    if (rxId < 10) {
-      strcat(finalText, "0");
-    }
-    strcat(finalText, rxIdText);
+    getRxIdStr(finalText, rxId);
     strcat(finalText, "  ");
     strcat(finalText, RxConfigs[startRxId + i - 1].Name);
     u8g2.drawStr(menuItemStartX, menuItemStartY, finalText);
@@ -916,12 +996,7 @@ void drawFunctionRxSelectionScreen() {
 void drawFunctionRxConfigurationScreen() {
   u8g2.drawStr(0, 10, "RX Configuration");
   char finalText[3] = "";
-  char rxIdText[2] = "";
-  itoa(CurrentRxId, rxIdText, 10);
-  if (CurrentRxId < 10) {
-    strcat(finalText, "0");
-  }
-  strcat(finalText, rxIdText);
+  getRxIdStr(finalText, CurrentRxId);
   u8g2.drawStr(115, 10, finalText);
   u8g2.drawLine(0, 15, 128, 15);
 
@@ -958,6 +1033,7 @@ void drawFunctionWipeEepromScreen() {
   u8g2.drawStr(25, 40, "Are you sure?");
 }
 
+//TODO: re-arrange screen real estate
 void refreshControlScreen(unsigned long currentMillis) {
   if (currentMillis - ScreenRefreshLastMillis >= ScreenRefreshInterval) {
     ScreenRefreshLastMillis = currentMillis;
@@ -1041,11 +1117,8 @@ void drawTimer() {
 
 void drawRx() {
   char finalText[7] = "RX: ";
-  char rxIdText[2] = "";
-  itoa(CurrentRxId, rxIdText, 10);
-  if (CurrentRxId < 10) {
-    strcat(finalText, "0");
-  }
+  char rxIdText[3] = "";
+  getRxIdStr(rxIdText, CurrentRxId);
   strcat(finalText, rxIdText);
   u8g2.drawStr(0, 28, finalText);
 }
@@ -1054,29 +1127,36 @@ void drawFlightMode() {
   u8g2.drawStr(0, 40, FlightMode[Aux2Value]);
 }
 
-void drawTrim() { //TODO: Get trim value from ROM
+//TODO: redeign trimmer style
+void drawTrim() {
   u8g2.drawStr(0, 52, "Y");
+  if (TrimmingMode && CurrentTrimmingIndex == 0) {
+    u8g2.drawLine(0, 52, 5, 52);
+  }
   u8g2.drawLine(9, 48, 40, 48);
   u8g2.drawLine(25, 47, 25, 49); //Neutral mark
-  uint8_t yawTrim = 2;
+  uint8_t yawTrim = RxConfigs[CurrentRxId - 1].YawTrim;
   u8g2.drawLine(25 + yawTrim, 46, 25 + yawTrim, 50);
 
   u8g2.drawStr(0, 64, "R");
+  if (TrimmingMode && CurrentTrimmingIndex == 3) {
+    u8g2.drawLine(0, 63, 5, 63);
+  }
   u8g2.drawLine(9, 60, 40, 60);
   u8g2.drawLine(25, 59, 25, 61); //Neutral mark
-  uint8_t rollTrim = -3;
+  uint8_t rollTrim = RxConfigs[CurrentRxId - 1].RollTrim;
   u8g2.drawLine(25 + rollTrim, 58, 25 + rollTrim, 62);
 
   u8g2.drawStr(48, 64, "T");
   u8g2.drawLine(50, 20, 50, 51);
   u8g2.drawLine(49, 36, 51, 36); //Neutral mark
-  uint8_t throttleTrim = 3;
+  uint8_t throttleTrim = RxConfigs[CurrentRxId - 1].ThrottleTrim;
   u8g2.drawLine(48, 36 + throttleTrim, 52, 36 + throttleTrim);
 
   u8g2.drawStr(60, 64, "P");
   u8g2.drawLine(62, 20, 62, 51);
   u8g2.drawLine(61, 36, 63, 36); //Neutral mark
-  uint8_t pitchTrim = -2;
+  uint8_t pitchTrim = RxConfigs[CurrentRxId - 1].PitchTrim;
   u8g2.drawLine(60, 36 + pitchTrim, 64, 36 + pitchTrim);
 }
 
@@ -1105,30 +1185,29 @@ void drawJoystick(byte startX, byte startY, byte valueX, byte valueY) {
   u8g2.drawDisc(positionX, positionY, 3, U8G2_DRAW_ALL);
 }
 
- void drawSignal(byte percentage, byte startX) {
-   if (percentage > 0) {
-     u8g2.drawLine(startX, 13, startX, 15); //20%
-     u8g2.drawLine(startX + 1, 13, startX + 1, 15);
-   }
-   if (percentage > 20) {
-     u8g2.drawLine(startX + 4, 10, startX + 4, 15);
-     u8g2.drawLine(startX + 5, 10, startX + 5, 15);
-   }
-   if (percentage > 40) {
-     u8g2.drawLine(startX + 8, 7, startX + 8, 15);
-     u8g2.drawLine(startX + 9, 7, startX + 9, 15);
-   }
-   if (percentage > 60) {
-     u8g2.drawLine(startX + 12, 4, startX + 12, 15);
-     u8g2.drawLine(startX + 13, 4, startX + 13, 15);
-   }
-   if (percentage > 80) {
-     u8g2.drawLine(startX + 16, 1, startX + 16, 15);
-     u8g2.drawLine(startX + 17, 1, startX + 17, 15);
-   }
- }
+void drawSignal(byte percentage, byte startX) {
+  if (percentage > 0) {
+    u8g2.drawLine(startX, 13, startX, 15); //20%
+    u8g2.drawLine(startX + 1, 13, startX + 1, 15);
+  }
+  if (percentage > 20) {
+    u8g2.drawLine(startX + 4, 10, startX + 4, 15);
+    u8g2.drawLine(startX + 5, 10, startX + 5, 15);
+  }
+  if (percentage > 40) {
+    u8g2.drawLine(startX + 8, 7, startX + 8, 15);
+    u8g2.drawLine(startX + 9, 7, startX + 9, 15);
+  }
+  if (percentage > 60) {
+    u8g2.drawLine(startX + 12, 4, startX + 12, 15);
+    u8g2.drawLine(startX + 13, 4, startX + 13, 15);
+  }
+  if (percentage > 80) {
+    u8g2.drawLine(startX + 16, 1, startX + 16, 15);
+    u8g2.drawLine(startX + 17, 1, startX + 17, 15);
+  }
+}
 
-//TODO: investigate why this function does not work
 void getRxIdStr(char* outStr, uint8_t rxId) {
   char finalText[3] = "";
   char rxIdText[3] = "";
