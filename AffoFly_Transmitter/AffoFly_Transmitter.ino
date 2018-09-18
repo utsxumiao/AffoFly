@@ -131,7 +131,7 @@ const uint16_t TimerRefreshInterval = 1000;
 unsigned long TimerRefreshLastMillis = 0;
 uint16_t Timer_Seconds = 0;
 
-const uint16_t ScreenRefreshInterval = 200;
+uint16_t ScreenRefreshInterval = 500;
 unsigned long ScreenRefreshLastMillis = 0;
 
 bool BuzzerEnabled = true;
@@ -140,7 +140,7 @@ byte BuzzerState = LOW;
 uint16_t BuzzerBeepInterval = 50;
 unsigned long BuzzerBeepLastMillis = 0;
 
-const uint8_t RadioSendInterval = 5;
+const uint8_t RadioSendInterval = 10;
 unsigned long RadioSendLastMillis = 0;
 
 char FlightMode[3][10] = {
@@ -223,6 +223,7 @@ void setup() {
   MenuBounce.update();
   if (MenuBounce.read() == LOW) {
     FunctionMode = true;
+    ScreenRefreshInterval = 200;
     BuzzerTimesToBeep = 3;
   } else {
     FunctionMode = false;
@@ -274,6 +275,7 @@ void loop() {
   unsigned long currentMillis = millis();
   if (FunctionMode) {
     if (currentMillis > FunctionWelcomeScreenShowDuration) {
+      setTime(currentMillis);
       setFunctionValues();
       beepBuzzer(currentMillis);
       refreshFunctionOperationScreen(currentMillis);
@@ -902,6 +904,9 @@ void refreshFunctionOperationScreen(unsigned long currentMillis) {
       switch (CurrentFunctionIndex) {
         case 0: //Main screen
           drawFunctionMainScreen();
+#ifdef SHOW_RATE
+          drawRate();
+#endif
           break;
         case 1: //Transmitter ID screen
           drawFunctionTransmitterIdScreen();
