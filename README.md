@@ -29,9 +29,9 @@ If you would like to learn Arduino development, let's learn together! If you are
  - **Radio Frequency**. The NRF24L01+ module provides 126 channels (0 - 125) mapping frequencies from 2400mhz to 2525mhz respectively, if you are planning to use it in areas close to residential like even indoor (a lot of WIFI) better stick to channels from 85 (2485mhz) and above to minimize interference, it gives you 40 channels to choose from, for simplicity I prefer starts from 100 and 25 channels is plenty for me. According to [List of WLAN channels](https://en.wikipedia.org/wiki/List_of_WLAN_channels) most WIFI routers are using frenquency under 2484mhz.
 
 ### Acknowlegements
-[MultiWii Community](http://www.multiwii.com)
-[Arduino](https://www.arduino.cc)
-[iForce2D](https://www.youtube.com/channel/UCTXOorupCLqqQifs2jbz7rQ). He has heaps of good quality videos and very informative.
+- [MultiWii Community](http://www.multiwii.com)
+- [Arduino](https://www.arduino.cc)
+- [iforce2d](https://www.youtube.com/channel/UCTXOorupCLqqQifs2jbz7rQ). He has heaps of interesting, informative and yet good quality videos.
 
 ### Licensing
 [MIT License](/LICENSE)
