@@ -3,9 +3,9 @@ Affordable Drone Project
 //TODO: some images/videos about this project
 ### What Is This Project About?
 This is a complete **LOW COST** guide for DIY Arduino and NRF2401+ based drone package which includes: 
-- [Transmitter(TX)](/transmitter)
-- [Receiver(RX)](/receiver)
-- [Flight Controller(FC)](/flight-controller)
+- Transmitter(TX): [AffoFly_Transmitter](/AffoFly_Transmitter)
+- Receiver(RX): [AffoFly_Receiver](/AffoFly_Receiver)
+- Flight Controller(FC): [AffoFly_MultiWii](/AffoFly_MultiWii)
 - [Frame](/frame) (the body of drone) 
 - [Other Parts](/other-parts) Brushless motors, Escs, batteries, propellers and so forth.
 
