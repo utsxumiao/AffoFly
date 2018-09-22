@@ -6,13 +6,14 @@
 
 //==== System Setting =============================================//
 #define VERSION_NUMBER     "0.012"
-//#define DEBUG_MODE  1
+#define DEBUG_MODE  1
 #define CLOCK_MULTIPLIER 1 // set this to 2 if you are using a 16MHz arduino, leave as 1 for an 8MHz arduino
 //=======================================================================//
 
 //==== Pin Definition ===================================================//
 #define PPM_PIN       2 // It has to be 2 unless you also update setPPM() and ISR
-#define LED_PIN       3
+#define BLUE_LED_PIN  3
+#define RED_LED_PIN   4
 #define NRF_CE_PIN    7
 #define NRF_CSN_PIN   8
 //=======================================================================//
@@ -34,7 +35,8 @@ const uint16_t RATE_REFRESH_INTERVAL = 1000;
 unsigned long RateRefreshLastMillis = 0;
 
 bool HasSignal = false;
-bool LedState = false;
+bool BlueLedState = false;
+bool RedLedState = false;
 
 RF24 radio(NRF_CE_PIN, NRF_CSN_PIN);
 
@@ -69,7 +71,8 @@ void setup() {
   Serial.begin(115200);
 #endif
   pinMode(PPM_PIN, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(BLUE_LED_PIN, OUTPUT);
+  pinMode(RED_LED_PIN, OUTPUT);
 
   radio.begin();
   radio.setPALevel(RF24_PA_MIN);
@@ -92,24 +95,22 @@ void loop() {
   receiveData(currentMillis);
   checkSignal(currentMillis);
   flashLed(currentMillis);
-#ifdef DEBUG_MODE
-  showRate(currentMillis);
   LoopCount++;
-#endif
+  calculateRate(currentMillis);
 }
 
-#ifdef DEBUG_MODE
-void showRate(unsigned long currentMillis) {
+void calculateRate(unsigned long currentMillis) {
   if (currentMillis - RateRefreshLastMillis >= RATE_REFRESH_INTERVAL) {
     RateRefreshLastMillis = currentMillis;
     PackageRate = PackageCount;
     LoopRate = LoopCount;
     PackageCount = 0;
     LoopCount = 0;
+#ifdef DEBUG_MODE
     Serial.print(PackageRate);  Serial.print(" / ");  Serial.println(LoopRate);
+#endif
   }
 }
-#endif
 
 void receiveData(unsigned long currentMillis) {
   while(radio.available()){
@@ -117,12 +118,14 @@ void receiveData(unsigned long currentMillis) {
     if(data.TxId == RADIO_TX_ID) {
       HasSignal = true;
       RadioSignalLastMillis = currentMillis;
-#ifdef DEBUG_MODE
       PackageCount++;
+#ifdef DEBUG_MODE
+//      Serial.print("Data received at: ");  Serial.print(millis());  Serial.print("    "); 
 #endif
       setPPMValuesFromData();
     }
-//#ifdef DEBUG_MODE
+#ifdef DEBUG_MODE
+//    Serial.print("PPM output at: ");  Serial.println(millis());
 //    Serial.print("TxId: "); Serial.print(data.TxId);  Serial.print("    ");
 //    Serial.print("Throttle: "); Serial.print(data.Throttle);  Serial.print("    ");
 //    Serial.print("Yaw: ");      Serial.print(data.Yaw);       Serial.print("    ");
@@ -134,7 +137,7 @@ void receiveData(unsigned long currentMillis) {
 //    Serial.print("Aux4: ");     Serial.print(data.Aux4);      Serial.print("    ");
 //    Serial.print("Aux5: ");     Serial.print(data.Aux5);      Serial.print("    ");
 //    Serial.print("Aux6: ");     Serial.print(data.Aux6);      Serial.print("\n");
-//#endif
+#endif
   }
 }
 
@@ -145,15 +148,36 @@ void checkSignal(unsigned long currentMillis) {
   }
 }
 
+// Given currently the AffoFly TX (with 8mhz) sends about 70 pps
+// I consider 50 pps on FC/RX side is good enough
+// PackageRate >= 50: Blue solid, Red off
+// PackageRate >= 40: Blue flashing, Red off
+// PackageRate >= 30: Blue flashing, Red flashing
+// PackageRate < 30:  Blue off, Red solid
+// No signal (500ms no package received): Blue off, Red off
 void flashLed(unsigned long currentMillis) {
   if (currentMillis - LedFlashLastMillis >= LED_FLASH_INTERVAL) {
     LedFlashLastMillis = currentMillis;
     if (HasSignal) {
-      LedState = !LedState;
+      if (PackageRate >= 50) {
+        BlueLedState = true;
+        RedLedState = false;
+      } else if (PackageRate >= 40) {
+        BlueLedState = !BlueLedState;
+        RedLedState = false;
+      } else if (PackageRate >= 30) {
+        BlueLedState = !BlueLedState;
+        RedLedState = !RedLedState;
+      } else {
+        BlueLedState = false;
+        RedLedState = true;
+      }
     } else {
-      if (LedState) LedState = false;
+      if (BlueLedState) BlueLedState = false;
+      if (RedLedState) RedLedState = false;
     }
-    digitalWrite(LED_PIN, LedState);
+    digitalWrite(BLUE_LED_PIN, BlueLedState);
+    digitalWrite(RED_LED_PIN, RedLedState);
   }
 }
 
@@ -205,7 +229,7 @@ ISR(TIMER1_COMPA_vect) {
   static boolean state = true;
   TCNT1 = 0;
 #ifdef DEBUG_MODE
-    Serial.print("PPM-Throttle: ");     Serial.println(PPM[0]);
+    //Serial.print("PPM-Throttle: ");     Serial.println(PPM[0]);
 #endif
   if ( state ) {
     //end pulse
