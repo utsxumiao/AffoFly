@@ -779,14 +779,14 @@ void setButtonsValue(unsigned long currentMillis) {
 
   if (MenuBounce.read() == LOW) {
     if (!MenuPressed) {
-      if (TrimmingMode) {
-        BuzzerTimesToBeep = 1;
-        TrimmingMode = false;
-      } else {
-        BuzzerTimesToBeep = 5;
-        TrimmingMode = true;
-      }
-      CurrentTrimmingIndex = 0;
+//      if (TrimmingMode) {
+//        BuzzerTimesToBeep = 1;
+//        TrimmingMode = false;
+//      } else {
+//        BuzzerTimesToBeep = 5;
+//        TrimmingMode = true;
+//      }
+//      CurrentTrimmingIndex = 0;
       MenuPressed = true;
     } else {
       MenuPressed = false;
