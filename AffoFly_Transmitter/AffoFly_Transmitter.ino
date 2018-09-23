@@ -38,7 +38,7 @@
 
 //==== Global Constant & Variable =======================================//
 uint16_t BatteryVoltage = 0;
-uint16_t LowBatteryVoltageThreshold = 3200; // mV
+uint16_t LowBatteryVoltageThreshold = 3400; // mV
 
 #ifdef SHOW_RATE
 uint8_t SendRate = 0;
@@ -1044,7 +1044,7 @@ void refreshControlScreen(unsigned long currentMillis) {
     ScreenRefreshLastMillis = currentMillis;
     u8g2.firstPage();
     do {
-      drawBattery(4200, 3200, BatteryVoltage, 0);
+      drawBattery(4200, 3400, BatteryVoltage, 0);
 #ifdef SHOW_RATE
       drawRate();
 #endif
