@@ -259,7 +259,7 @@
 
   /***********************          Cam Stabilisation             ***********************/
     /* The following lines apply only for a pitch/roll tilt stabilization system. Uncomment the first or second line to activate it */
-    //#define SERVO_MIX_TILT
+    #define SERVO_MIX_TILT
     //#define SERVO_TILT
 
     /* camera trigger function : activated via Rc Options in the GUI, servo output=A2 on promini */
@@ -328,6 +328,8 @@
      */
     //#define MY_PRIVATE_DEFAULTS "filename.h"
 
+    /* Software PWM Setup */
+//    #define ENABLE_SOFTWARE_PWM     1
 
 /*************************************************************************************************/
 /*****************                                                                 ***************/
