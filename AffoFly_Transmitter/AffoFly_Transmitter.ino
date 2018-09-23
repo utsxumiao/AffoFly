@@ -323,7 +323,7 @@ void putRxConfigs() {
     rxConfig.YawTrim = 0;
     rxConfig.PitchTrim = 0;
     rxConfig.RollTrim = 0;
-    char rxName[6] = "RX ";
+    char rxName[10] = "RX ";
     char rxIdText[3] = "";
     itoa(i, rxIdText, 10);
     if (i < 10) {
