@@ -1052,10 +1052,14 @@ void refreshControlScreen(unsigned long currentMillis) {
       drawRx();
       drawFlightMode();
       drawTrim();
-      drawAuxStatus(75, 28, "A3", data.Aux3);
-      drawAuxStatus(75, 40, "A4", data.Aux4);
-      drawAuxStatus(75, 52, "A5", data.Aux5);
-      drawAuxStatus(75, 64, "A6", data.Aux6);
+      char charA3[] = "A3";
+      char charA4[] = "A4";
+      char charA5[] = "A5";
+      char charA6[] = "A6";
+      drawAuxStatus(75, 28, charA3, data.Aux3);
+      drawAuxStatus(75, 40, charA4, data.Aux4);
+      drawAuxStatus(75, 52, charA5, data.Aux5);
+      drawAuxStatus(75, 64, charA6, data.Aux6);
       //drawJoystick(0, 18, data.Yaw, data.Throttle);
       //drawJoystick(88, 18, data.Roll, data.Pitch);
     } while (u8g2.nextPage());
@@ -1224,10 +1228,10 @@ void getRxIdStr(char* outStr, uint8_t rxId) {
   strcpy(outStr, finalText);
 }
 
-void sort(int *a, int n) {
-  for (int i = 1; i < n; ++i) {
-    int j = a[i];
-    int k;
+void sort(uint16_t *a, uint8_t n) {
+  for (uint8_t i = 1; i < n; ++i) {
+    uint8_t j = a[i];
+    uint8_t k;
     for (k = i - 1; (k >= 0) && (j < a[k]); k--)
     {
       a[k + 1] = a[k];

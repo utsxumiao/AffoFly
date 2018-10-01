@@ -1,0 +1,1 @@
+A quadcopter in 250mm, X setup.
