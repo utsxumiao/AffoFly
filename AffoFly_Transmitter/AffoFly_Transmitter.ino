@@ -8,7 +8,7 @@
 #include "printf.h"
 
 //==== System Setting =============================================//
-#define VERSION_NUMBER     "0.012"
+#define VERSION_NUMBER     "0.013"
 //#define DEBUG_MODE  1
 #define SHOW_RATE   1
 //=======================================================================//
@@ -134,7 +134,7 @@ uint16_t Timer_Seconds = 0;
 uint16_t ScreenRefreshInterval = 500;
 unsigned long ScreenRefreshLastMillis = 0;
 
-bool BuzzerEnabled = true;
+bool BuzzerEnabled = false;
 uint8_t BuzzerTimesToBeep = 0;
 byte BuzzerState = LOW;
 uint16_t BuzzerBeepInterval = 50;
@@ -160,6 +160,8 @@ struct RxConfigData {
   int8_t RollTrim;
   char Name[10];
 };
+
+RxConfigData rxConfig;
 RxConfigData RxConfigs[10];
 
 struct RadioPaLevelData {
@@ -232,6 +234,9 @@ void setup() {
 
   // Seed RxConfigs if it does not already exist
   if (EEPROM.read(RX_CONFIG_EEPROM_START_ADDRESS) == 0) {
+#ifdef DEBUG_MODE
+    Serial.println("RX data does not exist, seed data.");
+#endif
     putRxConfigs();
   }
 
@@ -241,12 +246,10 @@ void setup() {
     drawFunctionWelcomeScreen();
     getRxConfigs();
 #ifdef DEBUG_MODE
-    for (uint8_t i = 0; i < 10; i++) {
-      Serial.println(RxConfigs[i].Id);
-    }
+    dumpEeprom();
 #endif
   } else {
-    RxConfigData rxConfig = getRxConfig(CurrentRxId);
+    rxConfig = getRxConfig(CurrentRxId);
     radio.begin();
     radio.setPALevel(RadioPaLevels[RadioPaLevelIndex].PaValue);
     radio.setAutoAck(false);
@@ -264,11 +267,6 @@ void setup() {
   }
   resetData();
   readBatteryVoltage(10001); //Dummy value > BatteryVoltageReadInterval to force battery read once
-
-  //delete after
-  char testStr[3] = "";
-  getRxIdStr(testStr, 1);
-  Serial.println(testStr);
 }
 
 void loop() {
@@ -609,7 +607,6 @@ uint16_t mapJoystickValues(uint16_t val, uint16_t lower, uint16_t middle, uint16
   return reverse ? 3000 - val : val;
 }
 
-//TODO: Implement trimming function
 void setButtonsValue(unsigned long currentMillis) {
   Aux1Bounce.update();
   Aux2Bounce.update();
@@ -621,45 +618,79 @@ void setButtonsValue(unsigned long currentMillis) {
   if (Aux1Bounce.read() == LOW) {
     if (!Aux1Pressed) {
       if (TrimmingMode) {
+#ifdef DEBUG_MODE
+        Serial.println("Current RX config data: ");
+        Serial.print("Id=>");
+        Serial.print(rxConfig.Id);
+        Serial.print("  Name=>");
+        Serial.print(rxConfig.Name);
+        Serial.print("  RadioChannel=>");
+        Serial.print(rxConfig.RadioChannel);
+        Serial.print("  YawTrim=>");
+        Serial.print(rxConfig.YawTrim);
+        Serial.print("  ThrottleTrim=>");
+        Serial.print(rxConfig.ThrottleTrim);
+        Serial.print("  PitchTrim=>");
+        Serial.print(rxConfig.PitchTrim);
+        Serial.print("  RollTrim=>");
+        Serial.print(rxConfig.RollTrim);
+        Serial.println("");
+#endif
         switch (CurrentTrimmingIndex) {
           case 0: //Yaw
-            if (RxConfigs[CurrentRxId - 1].YawTrim >= RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].YawTrim = RX_TRIM_STEP_RANGE;
-            } else {
-              RxConfigs[CurrentRxId - 1].YawTrim++;
-              if (RxConfigs[CurrentRxId - 1].YawTrim == 0) BuzzerTimesToBeep = 3;
-              else BuzzerTimesToBeep = 1;
+            rxConfig.YawTrim++;
+            if (rxConfig.YawTrim > RX_TRIM_STEP_RANGE) {
+              rxConfig.YawTrim = RX_TRIM_STEP_RANGE;
             }
+            if (rxConfig.YawTrim == 0) BuzzerTimesToBeep = 3;
+            else BuzzerTimesToBeep = 1;
             break;
           case 1: //Throttle
-            if (RxConfigs[CurrentRxId - 1].ThrottleTrim >= RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].ThrottleTrim = RX_TRIM_STEP_RANGE;
-            } else {
-              RxConfigs[CurrentRxId - 1].ThrottleTrim++;
-              if (RxConfigs[CurrentRxId - 1].ThrottleTrim == 0) BuzzerTimesToBeep = 3;
-              else BuzzerTimesToBeep = 1;
+            rxConfig.ThrottleTrim++;
+            if (rxConfig.ThrottleTrim >= RX_TRIM_STEP_RANGE) {
+              rxConfig.ThrottleTrim = RX_TRIM_STEP_RANGE;
             }
+            if (rxConfig.ThrottleTrim == 0) BuzzerTimesToBeep = 3;
+            else BuzzerTimesToBeep = 1;
             break;
           case 2: //Pitch
-            if (RxConfigs[CurrentRxId - 1].PitchTrim >= RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].PitchTrim = RX_TRIM_STEP_RANGE;
-            } else {
-              RxConfigs[CurrentRxId - 1].PitchTrim++;
-              if (RxConfigs[CurrentRxId - 1].PitchTrim == 0) BuzzerTimesToBeep = 3;
-              else BuzzerTimesToBeep = 1;
+            rxConfig.PitchTrim++;
+            if (rxConfig.PitchTrim >= RX_TRIM_STEP_RANGE) {
+              rxConfig.PitchTrim = RX_TRIM_STEP_RANGE;
             }
+            if (rxConfig.PitchTrim == 0) BuzzerTimesToBeep = 3;
+            else BuzzerTimesToBeep = 1;
             break;
           case 3: //Roll
-            if (RxConfigs[CurrentRxId - 1].RollTrim >= RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].RollTrim = RX_TRIM_STEP_RANGE;
-            } else {
-              RxConfigs[CurrentRxId - 1].RollTrim++;
-              if (RxConfigs[CurrentRxId - 1].RollTrim == 0) BuzzerTimesToBeep = 3;
-              else BuzzerTimesToBeep = 1;
+            rxConfig.RollTrim++;
+            if (rxConfig.RollTrim >= RX_TRIM_STEP_RANGE) {
+              rxConfig.RollTrim = RX_TRIM_STEP_RANGE;
             }
+            if (rxConfig.RollTrim == 0) BuzzerTimesToBeep = 3;
+            else BuzzerTimesToBeep = 1;
             break;
         }
-        EEPROM.put(RX_CONFIG_EEPROM_START_ADDRESS + (CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES, RxConfigs[CurrentRxId - 1]);
+#ifdef DEBUG_MODE
+        Serial.print("Id=>");
+        Serial.print(rxConfig.Id);
+        Serial.print("  Name=>");
+        Serial.print(rxConfig.Name);
+        Serial.print("  RadioChannel=>");
+        Serial.print(rxConfig.RadioChannel);
+        Serial.print("  YawTrim=>");
+        Serial.print(rxConfig.YawTrim);
+        Serial.print("  ThrottleTrim=>");
+        Serial.print(rxConfig.ThrottleTrim);
+        Serial.print("  PitchTrim=>");
+        Serial.print(rxConfig.PitchTrim);
+        Serial.print("  RollTrim=>");
+        Serial.print(rxConfig.RollTrim);
+        Serial.println("");
+#endif
+        EEPROM.put((CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES + RX_CONFIG_EEPROM_START_ADDRESS, rxConfig);
+#ifdef DEBUG_MODE
+        dumpEeprom();
+#endif
       } else {
         //For safty prevent arming when throttle is not off
         if (data.Throttle > 1000) {
@@ -696,6 +727,10 @@ void setButtonsValue(unsigned long currentMillis) {
       if (TrimmingMode) {
         CurrentTrimmingIndex++;
         if (CurrentTrimmingIndex > 3) CurrentTrimmingIndex = 0;
+#ifdef DEBUG_MODE
+        Serial.print("Trimming Index: ");
+        Serial.println(CurrentTrimmingIndex);
+#endif
       } else {
         Aux3Value++;
         if (Aux3Value > AUX3_VALUE_UPPER_BOUNDARY) {
@@ -725,45 +760,83 @@ void setButtonsValue(unsigned long currentMillis) {
   if (Aux5Bounce.read() == LOW) {
     if (!Aux5Pressed) {
       if (TrimmingMode) {
+#ifdef DEBUG_MODE
+        Serial.println("Current RX config data: ");
+        Serial.print("Id=>");
+        Serial.print(rxConfig.Id);
+        Serial.print("  Name=>");
+        Serial.print(rxConfig.Name);
+        Serial.print("  RadioChannel=>");
+        Serial.print(rxConfig.RadioChannel);
+        Serial.print("  YawTrim=>");
+        Serial.print(rxConfig.YawTrim);
+        Serial.print("  ThrottleTrim=>");
+        Serial.print(rxConfig.ThrottleTrim);
+        Serial.print("  PitchTrim=>");
+        Serial.print(rxConfig.PitchTrim);
+        Serial.print("  RollTrim=>");
+        Serial.print(rxConfig.RollTrim);
+        Serial.println("");
+#endif
         switch (CurrentTrimmingIndex) {
           case 0: //Yaw
-            if (RxConfigs[CurrentRxId - 1].YawTrim <= -RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].YawTrim = -RX_TRIM_STEP_RANGE;
+            if (rxConfig.YawTrim <= -RX_TRIM_STEP_RANGE) {
+              rxConfig.YawTrim = -RX_TRIM_STEP_RANGE;
             } else {
-              RxConfigs[CurrentRxId - 1].YawTrim--;
-              if (RxConfigs[CurrentRxId - 1].YawTrim == 0) BuzzerTimesToBeep = 3;
+              rxConfig.YawTrim--;
+              if (rxConfig.YawTrim == 0) BuzzerTimesToBeep = 3;
               else BuzzerTimesToBeep = 1;
             }
             break;
           case 1: //Throttle
-            if (RxConfigs[CurrentRxId - 1].ThrottleTrim <= -RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].ThrottleTrim = -RX_TRIM_STEP_RANGE;
+            if (rxConfig.ThrottleTrim <= -RX_TRIM_STEP_RANGE) {
+              rxConfig.ThrottleTrim = -RX_TRIM_STEP_RANGE;
             } else {
-              RxConfigs[CurrentRxId - 1].ThrottleTrim--;
-              if (RxConfigs[CurrentRxId - 1].ThrottleTrim == 0) BuzzerTimesToBeep = 3;
+              rxConfig.ThrottleTrim--;
+              if (rxConfig.ThrottleTrim == 0) BuzzerTimesToBeep = 3;
               else BuzzerTimesToBeep = 1;
             }
             break;
           case 2: //Pitch
-            if (RxConfigs[CurrentRxId - 1].PitchTrim <= -RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].PitchTrim = -RX_TRIM_STEP_RANGE;
+            if (rxConfig.PitchTrim <= -RX_TRIM_STEP_RANGE) {
+              rxConfig.PitchTrim = -RX_TRIM_STEP_RANGE;
             } else {
-              RxConfigs[CurrentRxId - 1].PitchTrim--;
-              if (RxConfigs[CurrentRxId - 1].PitchTrim == 0) BuzzerTimesToBeep = 3;
+              rxConfig.PitchTrim--;
+              if (rxConfig.PitchTrim == 0) BuzzerTimesToBeep = 3;
               else BuzzerTimesToBeep = 1;
             }
             break;
           case 3: //Roll
-            if (RxConfigs[CurrentRxId - 1].RollTrim <= -RX_TRIM_STEP_RANGE) {
-              RxConfigs[CurrentRxId - 1].RollTrim = -RX_TRIM_STEP_RANGE;
+            if (rxConfig.RollTrim <= -RX_TRIM_STEP_RANGE) {
+              rxConfig.RollTrim = -RX_TRIM_STEP_RANGE;
             } else {
-              RxConfigs[CurrentRxId - 1].RollTrim--;
-              if (RxConfigs[CurrentRxId - 1].RollTrim == 0) BuzzerTimesToBeep = 3;
+              rxConfig.RollTrim--;
+              if (rxConfig.RollTrim == 0) BuzzerTimesToBeep = 3;
               else BuzzerTimesToBeep = 1;
             }
             break;
         }
-        EEPROM.put(RX_CONFIG_EEPROM_START_ADDRESS + (CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES, RxConfigs[CurrentRxId - 1]);
+#ifdef DEBUG_MODE
+        Serial.print("Id=>");
+        Serial.print(rxConfig.Id);
+        Serial.print("  Name=>");
+        Serial.print(rxConfig.Name);
+        Serial.print("  RadioChannel=>");
+        Serial.print(rxConfig.RadioChannel);
+        Serial.print("  YawTrim=>");
+        Serial.print(rxConfig.YawTrim);
+        Serial.print("  ThrottleTrim=>");
+        Serial.print(rxConfig.ThrottleTrim);
+        Serial.print("  PitchTrim=>");
+        Serial.print(rxConfig.PitchTrim);
+        Serial.print("  RollTrim=>");
+        Serial.print(rxConfig.RollTrim);
+        Serial.println("");
+#endif
+        EEPROM.put((CurrentRxId - 1) * RX_CONFIG_ALLOCATED_BYTES + RX_CONFIG_EEPROM_START_ADDRESS, rxConfig);
+#ifdef DEBUG_MODE
+        dumpEeprom();
+#endif
       } else {
         Aux5Value++;
         if (Aux5Value > AUX5_VALUE_UPPER_BOUNDARY) {
@@ -779,15 +852,22 @@ void setButtonsValue(unsigned long currentMillis) {
 
   if (MenuBounce.read() == LOW) {
     if (!MenuPressed) {
-//      if (TrimmingMode) {
-//        BuzzerTimesToBeep = 1;
-//        TrimmingMode = false;
-//      } else {
-//        BuzzerTimesToBeep = 5;
-//        TrimmingMode = true;
-//      }
-//      CurrentTrimmingIndex = 0;
+      if (TrimmingMode) {
+        BuzzerTimesToBeep = 1;
+        TrimmingMode = false;
+      } else {
+        BuzzerTimesToBeep = 5;
+        TrimmingMode = true;
+      }
+      CurrentTrimmingIndex = 0;
       MenuPressed = true;
+#ifdef DEBUG_MODE
+      Serial.print(MenuPressed);
+      Serial.print("Trimming Mode: ");
+      Serial.println(TrimmingMode);
+      Serial.print("Trimming Index: ");
+      Serial.println(CurrentTrimmingIndex);
+#endif
     } else {
       MenuPressed = false;
     }
@@ -811,9 +891,9 @@ void readBatteryVoltage(unsigned long currentMillis) {
     // Here using 4.7k/10k voltage divider, adjust up 3%.
     uint8_t adjustPersentage = 3;
     BatteryVoltage = averageValue * 0.1007937 * (100 + adjustPersentage); // (147 / 47) * 33 / 1024)
-#ifdef DEBUG_MODE
-    Serial.print("Voltage: "); Serial.println(BatteryVoltage);
-#endif
+//#ifdef DEBUG_MODE
+//    Serial.print("Voltage: "); Serial.println(BatteryVoltage);
+//#endif
     if (BatteryVoltage < LowBatteryVoltageThreshold) {
       BuzzerTimesToBeep = 10;
     }
@@ -839,10 +919,10 @@ void beepBuzzer(unsigned long currentMillis) {
 void getPayloadData() {
   data.UniqueId = RadioUniqueId;
   //Get the middle value for Yaw, Pitch and Roll from Serial Monitor
-  data.Throttle = mapJoystickValues(analogRead(THROTTLE_PIN), 0, 511, 1023, false ) + RxConfigs[CurrentRxId - 1].ThrottleTrim * RX_TRIM_STEP_WIDTH;
-  data.Yaw      = mapJoystickValues(analogRead(YAW_PIN),  0, 515, 1023, true ) + RxConfigs[CurrentRxId - 1].YawTrim * RX_TRIM_STEP_WIDTH;
-  data.Pitch    = mapJoystickValues(analogRead(PITCH_PIN), 0, 513, 1023, false ) + RxConfigs[CurrentRxId - 1].PitchTrim * RX_TRIM_STEP_WIDTH;
-  data.Roll     = mapJoystickValues(analogRead(ROLL_PIN), 0, 504, 1023, true ) + RxConfigs[CurrentRxId - 1].RollTrim * RX_TRIM_STEP_WIDTH;
+  data.Throttle = mapJoystickValues(analogRead(THROTTLE_PIN), 0, 511, 1023, false ) + rxConfig.ThrottleTrim * RX_TRIM_STEP_WIDTH;
+  data.Yaw      = mapJoystickValues(analogRead(YAW_PIN),  0, 515, 1023, true ) + rxConfig.YawTrim * RX_TRIM_STEP_WIDTH;
+  data.Pitch    = mapJoystickValues(analogRead(PITCH_PIN), 0, 513, 1023, false ) + rxConfig.PitchTrim * RX_TRIM_STEP_WIDTH;
+  data.Roll     = mapJoystickValues(analogRead(ROLL_PIN), 0, 504, 1023, true ) + rxConfig.RollTrim * RX_TRIM_STEP_WIDTH;
   data.Aux1     = map(Aux1Value, AUX1_VALUE_LOWER_BOUNDARY, AUX1_VALUE_UPPER_BOUNDARY, 1000, 2000);
   data.Aux2     = map(Aux2Value, AUX2_VALUE_LOWER_BOUNDARY, AUX2_VALUE_UPPER_BOUNDARY, 1000, 2000);
   data.Aux3     = map(Aux3Value, AUX3_VALUE_LOWER_BOUNDARY, AUX3_VALUE_UPPER_BOUNDARY, 1000, 2000);
@@ -1144,7 +1224,7 @@ void drawTrim() {
   }
   u8g2.drawLine(9, 48, 40, 48);
   u8g2.drawLine(25, 47, 25, 49); //Neutral mark
-  uint8_t yawTrim = RxConfigs[CurrentRxId - 1].YawTrim;
+  uint8_t yawTrim = rxConfig.YawTrim;
   u8g2.drawLine(25 + yawTrim, 46, 25 + yawTrim, 50);
 
   u8g2.drawStr(0, 64, "R");
@@ -1153,19 +1233,19 @@ void drawTrim() {
   }
   u8g2.drawLine(9, 60, 40, 60);
   u8g2.drawLine(25, 59, 25, 61); //Neutral mark
-  uint8_t rollTrim = RxConfigs[CurrentRxId - 1].RollTrim;
+  uint8_t rollTrim = rxConfig.RollTrim;
   u8g2.drawLine(25 + rollTrim, 58, 25 + rollTrim, 62);
 
   u8g2.drawStr(48, 64, "T");
   u8g2.drawLine(50, 20, 50, 51);
   u8g2.drawLine(49, 36, 51, 36); //Neutral mark
-  uint8_t throttleTrim = RxConfigs[CurrentRxId - 1].ThrottleTrim;
+  uint8_t throttleTrim = rxConfig.ThrottleTrim;
   u8g2.drawLine(48, 36 + throttleTrim, 52, 36 + throttleTrim);
 
   u8g2.drawStr(60, 64, "P");
   u8g2.drawLine(62, 20, 62, 51);
   u8g2.drawLine(61, 36, 63, 36); //Neutral mark
-  uint8_t pitchTrim = RxConfigs[CurrentRxId - 1].PitchTrim;
+  uint8_t pitchTrim = rxConfig.PitchTrim;
   u8g2.drawLine(60, 36 + pitchTrim, 64, 36 + pitchTrim);
 }
 
@@ -1244,3 +1324,13 @@ void softReset() {
   asm volatile ("  jmp 0");
 }
 
+void dumpEeprom() {
+  Serial.println("EEPROM DATA:    ");
+  for (int i = 0 ; i < 300 ; i++) {
+    Serial.print("  ");
+    Serial.print(i);
+    Serial.print("=>");
+    Serial.print(EEPROM.read(i));
+  }
+  Serial.println("");
+}
