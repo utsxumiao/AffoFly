@@ -701,9 +701,9 @@ void setButtonsValue(unsigned long currentMillis) {
         if (Aux1Value > AUX1_VALUE_UPPER_BOUNDARY) {
           Aux1Value = AUX1_VALUE_LOWER_BOUNDARY;
         }
-        Aux1Pressed = true;
         BuzzerTimesToBeep = Aux1Value + 1;
       }
+      Aux1Pressed = true;
     }
   } else {
     Aux1Pressed = false;
@@ -736,9 +736,9 @@ void setButtonsValue(unsigned long currentMillis) {
         if (Aux3Value > AUX3_VALUE_UPPER_BOUNDARY) {
           Aux3Value = AUX3_VALUE_LOWER_BOUNDARY;
         }
-        Aux3Pressed = true;
         BuzzerTimesToBeep = Aux3Value + 1;
       }
+      Aux3Pressed = true;
     }
   } else {
     Aux3Pressed = false;
@@ -842,9 +842,9 @@ void setButtonsValue(unsigned long currentMillis) {
         if (Aux5Value > AUX5_VALUE_UPPER_BOUNDARY) {
           Aux5Value = AUX5_VALUE_LOWER_BOUNDARY;
         }
-        Aux5Pressed = true;
         BuzzerTimesToBeep = Aux5Value + 1;
       }
+      Aux5Pressed = true;
     }
   } else {
     Aux5Pressed = false;
@@ -863,14 +863,14 @@ void setButtonsValue(unsigned long currentMillis) {
       MenuPressed = true;
 #ifdef DEBUG_MODE
       Serial.print(MenuPressed);
-      Serial.print("Trimming Mode: ");
-      Serial.println(TrimmingMode);
-      Serial.print("Trimming Index: ");
+      Serial.print("  Trimming Mode: ");
+      Serial.print(TrimmingMode);
+      Serial.print("  Trimming Index: ");
       Serial.println(CurrentTrimmingIndex);
 #endif
-    } else {
-      MenuPressed = false;
     }
+  } else {
+    MenuPressed = false;
   }
 }
 
