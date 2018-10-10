@@ -8,6 +8,9 @@
 #include "IMU.h"
 #include "LCD.h"
 #include "Sensors.h"
+  #ifdef SERIAL_DEBUG_MSG
+      #include "Serial.h"
+  #endif 
 
 static void Device_Mag_getADC();
 static void Baro_init();
@@ -193,6 +196,11 @@ void GYRO_Common() {
       return;
     #else
       calibratingG--;
+
+      #ifdef SERIAL_DEBUG_MSG
+//          SerialWriteNumLn(calibratingG);
+      #endif    
+    
     #endif
   }
 

@@ -422,6 +422,12 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
     }
   #endif
 
+  #ifdef SERIAL_DEBUG_MSG
+//      SerialWriteNum(rcData[THROTTLE]);
+//      SerialWriteStr(" : ");
+//      SerialWriteNumLn(rcCommand[THROTTLE]);
+  #endif
+
   // query at most one multiplexed analog channel per MWii cycle
   static uint8_t analogReader =0;
   switch (analogReader++ % (3+VBAT_CELLS_NUM)) {
@@ -641,6 +647,15 @@ void setup() {
     SerialOpen(2,SERIAL2_COM_SPEED);
     SerialOpen(3,SERIAL3_COM_SPEED);
   #endif
+
+#ifdef SERIAL_DEBUG_MSG
+  SerialWriteStrLn("== Serial Debugging Enabled ==");
+
+  #if defined(PROMINI)
+    SerialWriteStrLn("PROMINI defined");
+  #endif
+#endif
+
   LEDPIN_PINMODE;
   POWERPIN_PINMODE;
   BUZZERPIN_PINMODE;
@@ -764,6 +779,17 @@ void setup() {
 }
 
 void go_arm() {
+  #ifdef SERIAL_DEBUG_MSG
+      SerialWriteStrLn("go_arm()");
+
+      SerialWriteNum(f.ARMED);
+      SerialWriteStr(" - ");
+      SerialWriteNum(f.BARO_MODE);
+      SerialWriteStr(" - ");
+      SerialWriteNum(calibratingG);
+      SerialWriteStrLn(" - ");
+  #endif
+        
   if(calibratingG == 0
   #if defined(ONLYARMWHENFLAT)
     && f.ACC_CALIBRATED 
@@ -816,6 +842,10 @@ void go_arm() {
   }
 }
 void go_disarm() {
+  #ifdef SERIAL_DEBUG_MSG
+      SerialWriteStrLn("go_disarm()");
+  #endif
+        
   if (f.ARMED) {
     f.ARMED = 0;
     #ifdef LOG_PERMANENT
@@ -893,6 +923,12 @@ void loop () {
     #endif
     // end of failsafe routine - next change is made with RcOptions setting
 
+    #ifdef SERIAL_DEBUG_MSG
+//            SerialWriteNum(rcData[3]);
+//            SerialWriteStr(" - ");
+//            SerialWriteNumLn(rcData[THROTTLE]);
+    #endif
+
     // ------------------ STICKS COMMAND HANDLER --------------------
     // checking sticks positions
     uint8_t stTmp = 0;
@@ -900,11 +936,46 @@ void loop () {
       stTmp >>= 2;
       if(rcData[i] > MINCHECK) stTmp |= 0x80;      // check for MIN
       if(rcData[i] < MAXCHECK) stTmp |= 0x40;      // check for MAX
+
+      #ifdef SERIAL_DEBUG_MSG
+//            SerialWriteNum(i);
+//            SerialWriteStr(" : ");
+//            SerialWriteNum(rcData[i]);
+//            SerialWriteStr(" [ ");
+//            SerialWriteNum(MINCHECK);
+//            SerialWriteStr(" - ");
+//            SerialWriteNum(MAXCHECK);
+//            SerialWriteStr(" ]: ");
+//            SerialWriteNumLn(stTmp);
+      #endif      
     }
     if(stTmp == rcSticks) {
       if(rcDelayCommand<250) rcDelayCommand++;
     } else rcDelayCommand = 0;
     rcSticks = stTmp;
+
+    #ifdef SERIAL_DEBUG_MSG
+//            SerialWriteNum(THROTTLE);
+//            SerialWriteStr(" - ");
+//            SerialWriteNum(rcData[THROTTLE]);
+//            SerialWriteStr(" - ");
+//            SerialWriteNum(MINCHECK);
+//            SerialWriteStr(" - ");
+//
+//            SerialWriteNum(BOXARM);
+//            SerialWriteStr(" - ");
+//            SerialWriteNum(conf.activate[BOXARM]);
+//            SerialWriteStr(" - ");
+//            SerialWriteNum(rcOptions[BOXARM]);
+//            SerialWriteStr(" - ");
+//            SerialWriteNum(f.OK_TO_ARM);
+//            SerialWriteStr(" - ");
+//            SerialWriteNumLn(f.ARMED);
+    #endif
+
+    #ifdef SERIAL_DEBUG_MSG
+//            SerialWriteNumLn(rcDelayCommand);
+    #endif
     
     // perform actions    
     if (rcData[THROTTLE] <= MINCHECK) {            // THROTTLE at minimum
@@ -924,6 +995,9 @@ void loop () {
     if(rcDelayCommand == 20) {
       if(f.ARMED) {                   // actions during armed
         #ifdef ALLOW_ARM_DISARM_VIA_TX_YAW
+          #ifdef SERIAL_DEBUG_MSG
+              SerialWriteStrLn("pre - go_disarm()");
+          #endif        
           if (conf.activate[BOXARM] == 0 && rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) go_disarm();    // Disarm via YAW
         #endif
         #ifdef ALLOW_ARM_DISARM_VIA_TX_ROLL
@@ -966,6 +1040,22 @@ void loop () {
             SET_ALARM(ALRM_FAC_TOGGLE, i);
           }
         #endif
+
+        #ifdef SERIAL_DEBUG_MSG
+            SerialWriteNum(conf.activate[BOXARM]);
+            SerialWriteStr(" == 0 && ");
+            SerialWriteNum(rcSticks);
+            SerialWriteStr(" == ( ");
+            SerialWriteNum(THR_LO);
+            SerialWriteStr(" + ");
+            SerialWriteNum(YAW_HI);
+            SerialWriteStr(" + ");
+            SerialWriteNum(PIT_CE);
+            SerialWriteStr(" + ");
+            SerialWriteNum(ROL_CE);
+            SerialWriteStrLn(" ) ");
+        #endif
+        
         if (rcSticks == THR_LO + YAW_HI + PIT_HI + ROL_CE) {            // Enter LCD config
           #if defined(LCD_CONF)
             configurationLoop(); // beginning LCD configuration
@@ -1018,6 +1108,11 @@ void loop () {
         }
       }
     }
+
+    #ifdef SERIAL_DEBUG_MSG
+//            SerialWriteNumLn(rcData[THROTTLE]);
+    #endif
+ 
     #if defined(LED_FLASHER)
       led_flasher_autoselect_sequence();
     #endif
@@ -1369,6 +1464,7 @@ void loop () {
     }
     rcCommand[THROTTLE] = initialThrottleHold + BaroPID;
   }
+  
   #endif //BARO
 
 

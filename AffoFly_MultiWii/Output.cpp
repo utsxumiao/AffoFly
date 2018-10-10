@@ -4,6 +4,9 @@
 #include "types.h"
 #include "MultiWii.h"
 #include "Alarms.h"
+#ifdef SERIAL_DEBUG_MSG
+  #include "Serial.h"
+#endif
 
 void initializeSoftPWM(void);
 
@@ -699,6 +702,10 @@ void initOutput() {
       TCCR2B =  (1<<CS20) | (1<<CS21);
     #endif
 
+#ifdef SERIAL_DEBUG_MSG
+  SerialWriteNumLn(NUMBER_MOTOR);
+#endif
+
     #if (NUMBER_MOTOR > 0)
       TCCR1A |= _BV(COM1A1); // connect pin 9 to timer 1 channel A
     #endif
@@ -805,6 +812,7 @@ void initializeServo() {
 //      #define SERVO_ISR TIMER0_COMPA_vect
 //      #define SERVO_CHANNEL OCR0A
       TCCR2A = 0; // normal counting mode
+//      TCCR2B =  (1<<CS20) | (1<<CS21);
       TIMSK2 |= (1<<OCIE2A); // Enable CTC interrupt
       #define SERVO_ISR TIMER2_COMPA_vect
       #define SERVO_CHANNEL OCR2A
@@ -1519,6 +1527,17 @@ void mixTable() {
     #error "missing coptertype mixtable entry. Either you forgot to define a copter type or the mixing table is lacking neccessary code"
   #endif // MY_PRIVATE_MIXING
 
+
+  #ifdef SERIAL_DEBUG_MSG
+//      SerialWriteNum(motor[0]);
+//      SerialWriteStr(", ");
+//      SerialWriteNum(motor[1]);
+//      SerialWriteStr(", ");
+//      SerialWriteNum(motor[2]);
+//      SerialWriteStr(", ");
+//      SerialWriteNumLn(motor[3]);
+  #endif
+  
   /************************************************************************************************************/
   /****************************                Cam stabilize Servos             *******************************/
 
@@ -1652,6 +1671,35 @@ void mixTable() {
         motor[i] = MINCOMMAND;
     }
 
+  #ifdef SERIAL_DEBUG_MSG
+      #ifdef MOTOR_STOP
+//        SerialWriteStr("MOTOR_STOP defined - ");
+      #endif
+
+      if (f.ARMED) {
+//        SerialWriteStr("f.ARMED set - ");
+      }
+
+//      SerialWriteNumLn(conf.minthrottle);
+
+//      SerialWriteNum(rcData[THROTTLE]);
+//      SerialWriteStr(" - ");
+//      SerialWriteNum(MINCHECK);
+//      SerialWriteStr(" - ");
+//      
+//      if (f.BARO_MODE) {
+//        SerialWriteStr("BARO_MODE - ");
+//      }
+//      
+//      SerialWriteNum(motor[0]);
+//      SerialWriteStr(", ");
+//      SerialWriteNum(motor[1]);
+//      SerialWriteStr(", ");
+//      SerialWriteNum(motor[2]);
+//      SerialWriteStr(", ");
+//      SerialWriteNumLn(motor[3]);
+  #endif
+  
   /****************                      Powermeter Log                    ******************/
   #if (LOG_VALUES >= 3) || defined(POWERMETER_SOFT)
   {

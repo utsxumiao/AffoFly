@@ -46,6 +46,11 @@ void rxInt(void);
 /**************************************************************************************/
 void configureReceiver() {
   /******************    Configure each rc pin for PCINT    ***************************/
+
+  #ifdef SERIAL_DEBUG_MSG
+    SerialWriteStrLn("configureReceiver");
+  #endif  
+  
   #if defined(STANDARD_RX)
     #if defined(MEGA)
       DDRK = 0;  // defined PORTK as a digital port ([A8-A15] are consired as digital PINs and not analogical)
@@ -54,9 +59,18 @@ void configureReceiver() {
     for(uint8_t i = 0; i < PCINT_PIN_COUNT; i++){ // i think a for loop is ok for the init.
       PCINT_RX_PORT |= PCInt_RX_Pins[i];
       PCINT_RX_MASK |= PCInt_RX_Pins[i];
+
+      #ifdef SERIAL_DEBUG_MSG
+        SerialWriteNumLn(PCInt_RX_Pins[i]);
+      #endif       
     }
     PCICR = PCIR_PORT_BIT;
-    
+
+      #ifdef SERIAL_DEBUG_MSG
+        SerialWriteStr("PCINT_RX_PORT: ");
+        SerialWriteNumLn(PCINT_RX_PORT);
+      #endif
+          
     /*************    atmega328P's Specific Aux2 Pin Setup    *********************/
     #if defined(PROMINI)
      #if defined(RCAUXPIN)
@@ -206,7 +220,7 @@ void configureReceiver() {
       uint8_t pin;
       uint16_t cTime,dTime;
       static uint16_t edgeTime;
-    
+
       pin = PINB;
       cTime = micros();
       sei();
@@ -279,7 +293,7 @@ void configureReceiver() {
   #if defined(FAILSAFE)
     static uint8_t GoodPulses;
   #endif
-  
+    
     now = micros();
     sei();
     diff = now - last;
@@ -442,6 +456,7 @@ void readSerial_RX(void) {
 
 uint16_t readRawRC(uint8_t chan) {
   uint16_t data;
+    
   #if defined(SPEKTRUM) || defined(SBUS) || defined(SUMD)
     if (chan < RC_CHANS) {
       data = rcValue[rcChannel[chan]];
@@ -456,6 +471,15 @@ uint16_t readRawRC(uint8_t chan) {
     data = rcValue[rcChannel[chan]]; // Let's copy the data Atomically
     SREG = oldSREG;        // Let's restore interrupt state
   #endif
+
+  #ifdef SERIAL_DEBUG_MSG
+    if (chan == 3)  {
+//      SerialWriteNum(chan);
+//      SerialWriteStr(" : ");
+//      SerialWriteNumLn(data);
+    }
+  #endif
+  
   return data; // We return the value correctly copied when the IRQ's where disabled
 }
 
@@ -497,6 +521,17 @@ void computeRC() {
         #endif
         if (rcSerial[chan] >900) {rcData[chan] = rcSerial[chan];} // only relevant channels are overridden
       }
+
+        #ifdef SERIAL_DEBUG_MSG
+          if (chan == 3)  {
+//            SerialWriteNum(chan);
+//            SerialWriteStr(" : ");
+//            SerialWriteNum(rcData[chan]);
+//            SerialWriteStr(" - ");
+//            SerialWriteNumLn(rcSerial[chan]);
+          }
+        #endif
+      
     }
   #endif
 }

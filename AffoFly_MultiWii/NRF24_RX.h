@@ -49,7 +49,6 @@ extern int16_t nrf24_rcData[RC_CHANS];
 
 void NRF24_Init();
 void NRF24_Read_RC();
-
 #endif
 
 #endif /* NRF24_RX_H_ */

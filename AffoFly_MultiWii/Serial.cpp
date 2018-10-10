@@ -239,3 +239,32 @@ void SerialSerialize(uint8_t port,uint8_t a) {
 void SerialWrite(uint8_t port,uint8_t c){
   SerialSerialize(port,c);UartSendData(port);
 }
+
+#ifdef SERIAL_DEBUG_MSG
+void SerialWriteStr(const char *str)  {
+  while(*str) {
+    SerialSerialize(SERIAL_DEBUG_PORT, *str++);
+  }
+  UartSendData(SERIAL_DEBUG_PORT);
+}
+
+void SerialWriteStrLn(const char *str)  {
+  while(*str) {
+    SerialSerialize(SERIAL_DEBUG_PORT, *str++);
+  }
+  SerialSerialize(SERIAL_DEBUG_PORT, '\n');
+  UartSendData(SERIAL_DEBUG_PORT);
+}
+
+void SerialWriteNum(uint32_t num) {
+  char str[10];
+  ltoa(num, str, 10);
+  SerialWriteStr(str);
+}
+
+void SerialWriteNumLn(uint32_t num) {
+  char str[10];
+  ltoa(num, str, 10);
+  SerialWriteStrLn(str);
+}
+#endif

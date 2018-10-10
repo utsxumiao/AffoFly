@@ -15,8 +15,10 @@ int16_t nrf24_rcData[RC_CHANS];
 static const uint64_t pipe = 0xE8E8F0F0E1LL;
 const uint8_t RADIO_CHANNEL = 101;
 
+  #ifndef TEST_DEBUG_RX
 RF24 radio(7, 8); // CE, CSN
-
+  #endif
+  
 RF24Data nrf24Data;
 //RF24AckPayload nrf24AckPayload;
 //extern RF24AckPayload nrf24AckPayload;
@@ -51,6 +53,7 @@ void NRF24_Init() {
   resetRF24Data();
   //resetRF24AckPayload();
 
+    #ifndef TEST_DEBUG_RX
   radio.begin();
   radio.setDataRate(RF24_250KBPS);
   radio.setPALevel(RF24_PA_MIN);
@@ -60,12 +63,17 @@ void NRF24_Init() {
 
   radio.openReadingPipe(1,pipe);
   radio.startListening();  
+    #endif
 }
 
 void NRF24_Read_RC() {
   
   static unsigned long lastRecvTime = 0;
-
+  
+  #ifdef TEST_DEBUG_RX
+    static unsigned long testRxIndex = 0;
+  #endif
+  
 //  nrf24AckPayload.lat = 35.62;
 //  nrf24AckPayload.lon = 139.68;
 //  nrf24AckPayload.heading = att.heading;
@@ -73,7 +81,8 @@ void NRF24_Read_RC() {
 //  nrf24AckPayload.roll = att.angle[ROLL];
 //  nrf24AckPayload.alt = alt.EstAlt;
 //  memcpy(&nrf24AckPayload.flags, &f, 1); // first byte of status flags
-	
+
+    #ifndef TEST_DEBUG_RX
   unsigned long now = millis();
   while ( radio.available() ) {
     //radio.writeAckPayload(1, &nrf24AckPayload, sizeof(RF24AckPayload));
@@ -84,6 +93,37 @@ void NRF24_Read_RC() {
     // signal lost?
     resetRF24Data();
   }
+    #endif
+    
+  #ifdef TEST_DEBUG_RX
+//    resetRF24Data();
+
+    // rcChannel[RC_CHANS]  = {ROLLPIN, PITCHPIN, YAWPIN, THROTTLEPIN, AUX1PIN,AUX2PIN,AUX3PIN,AUX4PIN};
+    // THR_LO + YAW_HI + PIT_CE + ROL_CE
+
+    testRxIndex++;
+
+    if (testRxIndex > 200)  {
+      if (testRxIndex > 300)  {
+        nrf24Data.Throttle = map(analogRead(3), 0, 1023, 1000, 2000);  // A3
+        nrf24Data.Yaw = 1500; // map(analogRead(2), 0, 1023, 1000, 2000);       // A2
+        nrf24Data.Pitch = 1500; // map(analogRead(1), 0, 1023, 1000, 2000);     // A1
+        nrf24Data.Roll = 1500; // map(analogRead(0), 0, 1023, 1000, 2000);      // A0
+
+        testRxIndex = 500;
+      }
+      else  {
+        nrf24Data.Throttle = 1000; // map(analogRead(3), 0, 1023, 1000, 2000);  // A3
+        nrf24Data.Yaw = 2000; // map(analogRead(2), 0, 1023, 1000, 2000);       // A2
+        nrf24Data.Pitch = 1500; // map(analogRead(1), 0, 1023, 1000, 2000);     // A1
+        nrf24Data.Roll = 1500; // map(analogRead(0), 0, 1023, 1000, 2000);      // A0
+      }
+    }
+//    nrf24Data.Aux1 = 1000; // map(digitalRead(2), 0, 1, 1000, 2000);        // 2
+//    nrf24Data.Aux2;
+//    nrf24Data.Aux3;
+//    nrf24Data.Aux4;
+  #endif
   
   nrf24_rcData[THROTTLE] = nrf24Data.Throttle;
   nrf24_rcData[YAW] =      nrf24Data.Yaw;

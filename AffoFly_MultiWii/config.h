@@ -408,6 +408,12 @@ At this moment you can use this function only with WinGUI 2.3 release. MultiWiiC
     /******************************* nRF24L01 ****************************************/
     #define NRF24_RX
 
+    // ---------------
+    // * 09/10/2018 by Chan
+    // Test RX for debugging purpose
+    #define TEST_DEBUG_RX
+    // ---------------
+    
 /*************************************************************************************************/
 /*****************                                                                 ***************/
 /****************  SECTION  4 - ALTERNATE CPUs & BOARDS                                    *******/
@@ -1165,6 +1171,13 @@ Also note, that maqgnetic declination changes with time, so recheck your value e
     /* Enable string transmissions from copter to GUI */
     //#define DEBUGMSG
 
+    // ----------------------------
+    // * 06/10/2018 by Chan
+    // SERIAL_DEBUG_PORT - Port number to use for Serial Communication
+    // SERIAL_DEBUG_MSG - Message to send to the Serial Monitor
+    // ----------------------------
+    #define SERIAL_DEBUG_PORT   0
+//    #define SERIAL_DEBUG_MSG
 
   /********************************************************************/
   /****           ESCs calibration                                 ****/

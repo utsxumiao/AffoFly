@@ -24,4 +24,10 @@ void    UartSendData(uint8_t port);
 
 void SerialWrite16(uint8_t port, int16_t val);
 
+  #ifdef SERIAL_DEBUG_MSG
+    void SerialWriteStr(const char *str);
+    void SerialWriteStrLn(const char *str);
+    void SerialWriteNum(uint32_t num);
+    void SerialWriteNumLn(uint32_t num);
+  #endif
 #endif /* SERIAL_H_ */
