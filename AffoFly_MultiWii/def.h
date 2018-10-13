@@ -253,10 +253,13 @@
 // * 30/09/18 by Chan
 // There will be only one Servo and one pin (pin 3)
 //   So, SEC_SERVO_FROM and SEC_SERVO_TO are both 1 (one)
+//
+// * 12/10/18 by Chan
+// Reinstated previous settings
 // ------------------------
 #if (defined(SERVO_TILT)|| defined(SERVO_MIX_TILT))&& defined(CAMTRIG)
-  #define SEC_SERVO_FROM   1 // use servo from 1 to 3 (=> changed to servo from 1 to 1)
-  #define SEC_SERVO_TO     1 // 3 - (changed) previous value was 3
+  #define SEC_SERVO_FROM   1 // use servo from 1 to 3
+  #define SEC_SERVO_TO     3
 #else
   #if defined(SERVO_TILT)|| defined(SERVO_MIX_TILT)
     // if A0 and A1 is taken by motors, we can use A2 and 12 for Servo tilt
@@ -264,13 +267,13 @@
       #define SEC_SERVO_FROM   3 // use servo from 3 to 4
       #define SEC_SERVO_TO     4
     #else
-      #define SEC_SERVO_FROM   1 // use servo from 1 to 2 (=> changed to servo from 1 to 1)
-      #define SEC_SERVO_TO     1 // 2 - (changed) previous value was 2
+      #define SEC_SERVO_FROM   1 // use servo from 1 to 2
+      #define SEC_SERVO_TO     2
     #endif
   #endif
   #if defined(CAMTRIG)
-    #define SEC_SERVO_FROM   1 // 3 - (changed) previous value was 3 - use servo 3 (=> changed to servo from 1 to 1)
-    #define SEC_SERVO_TO     1 // 3 - (changed) previous value was 3
+    #define SEC_SERVO_FROM   3 - use servo 3
+    #define SEC_SERVO_TO     3
   #endif
 #endif
 
@@ -369,13 +372,13 @@
 // ------------------------
 // * 30/09/18 by Chan
 // SERVO_1_PINMODE is changed to use pin 3
+//
+// * 12/10/18 by Chan
+// Reinstated previous settings
 // ------------------------
-//  #define SERVO_1_PINMODE            DDRC |= 1<<0; // pin A0  // TILT_PITCH - WING left
-//  #define SERVO_1_PIN_HIGH           PORTC |= 1<<0;
-//  #define SERVO_1_PIN_LOW            PORTC &= ~(1<<0);
-  #define SERVO_1_PINMODE            DDRD|= 1<<3; // pin 3    // TRI REAR - BI RIGHT
-  #define SERVO_1_PIN_HIGH           PORTD|= 1<<3;
-  #define SERVO_1_PIN_LOW            PORTD &= ~(1<<3);
+  #define SERVO_1_PINMODE            DDRC |= 1<<0; // pin A0  // TILT_PITCH - WING left
+  #define SERVO_1_PIN_HIGH           PORTC |= 1<<0;
+  #define SERVO_1_PIN_LOW            PORTC &= ~(1<<0);
   #define SERVO_2_PINMODE            DDRC |= 1<<1; // pin A1  // TILT_ROLL  - WING right
   #define SERVO_2_PIN_HIGH           PORTC |= 1<<1;
   #define SERVO_2_PIN_LOW            PORTC &= ~(1<<1);
