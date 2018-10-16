@@ -6,7 +6,10 @@
 #include "MultiWii.h"
 #include <RF24.h>
 #include "NRF24_RX.h"
-
+  #ifdef SERIAL_DEBUG_MSG
+    #include "Serial.h"
+  #endif
+  
 #if defined(NRF24_RX)
 
 int16_t nrf24_rcData[RC_CHANS];
@@ -30,9 +33,9 @@ void resetRF24Data()
   nrf24Data.Pitch = 1500;
   nrf24Data.Roll = 1500;
   nrf24Data.Aux1 = 1000;
-  nrf24Data.Aux2 = 1000;
+  nrf24Data.Aux2 = 2000;  // set to 2000 for testing
   nrf24Data.Aux3 = 1000;
-  nrf24Data.Aux4 = 1000;
+  nrf24Data.Aux4 = 2000;  // set to 2000 for testing
   nrf24Data.Aux5 = 1000;
   nrf24Data.Aux6 = 1000;
 }
@@ -72,6 +75,7 @@ void NRF24_Read_RC() {
   
   #ifdef TEST_DEBUG_RX
     static unsigned long testRxIndex = 0;
+    static unsigned long testAuxButtonCount = 0;
   #endif
   
 //  nrf24AckPayload.lat = 35.62;
@@ -110,6 +114,29 @@ void NRF24_Read_RC() {
         nrf24Data.Pitch = 1500; // map(analogRead(1), 0, 1023, 1000, 2000);     // A1
         nrf24Data.Roll = 1500; // map(analogRead(0), 0, 1023, 1000, 2000);      // A0
 
+        testAuxButtonCount++;
+
+        if ((testAuxButtonCount % 50) == 0) {
+          nrf24Data.Aux1 = (2000 - nrf24Data.Aux1) + 1000;
+          nrf24Data.Aux2 = (2000 - nrf24Data.Aux2) + 1000;
+//          nrf24Data.Aux3 = (2000 - nrf24Data.Aux3) + 1000;
+//          nrf24Data.Aux4 = (2000 - nrf24Data.Aux4) + 1000;
+
+          #ifdef SERIAL_DEBUG_MSG
+//            SerialWriteNum(nrf24Data.Aux1);
+//            SerialWriteStr(" ==::== ");
+//            SerialWriteNumLn(nrf24Data.Aux2);
+          #endif
+          
+        }
+
+        if (testAuxButtonCount > 999) testAuxButtonCount = 0;
+
+//        nrf24Data.Aux1 = 2000;
+//        nrf24Data.Aux2 = 1000;
+//        nrf24Data.Aux3 = 2000;
+//        nrf24Data.Aux4 = 1000;
+        
         testRxIndex = 500;
       }
       else  {

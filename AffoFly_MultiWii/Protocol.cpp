@@ -262,6 +262,11 @@ void serialCom() {
 void evaluateCommand(uint8_t c) {
   uint32_t tmp=0; 
 
+    #ifdef SERIAL_DEBUG_MSG
+          SerialWriteStr("evaluateCommand : ");
+          SerialWriteNumLn(c);
+    #endif
+
   switch(c) {
     // adding this message as a comment will return an error status for MSP_PRIVATE (end of switch), allowing third party tools to distinguish the implementation of this message
     //case MSP_PRIVATE:
@@ -279,8 +284,18 @@ void evaluateCommand(uint8_t c) {
       mspAck();
       #if EXTAUX
         s_struct_w((uint8_t*)&conf.activate[0],CHECKBOXITEMS*4);
+
+        #ifdef SERIAL_DEBUG_MSG
+          SerialWriteStrLn("MSP_SET_BOX > EXTAUX");
+        #endif
+        
       #else
         s_struct_w((uint8_t*)&conf.activate[0],CHECKBOXITEMS*2);
+
+        #ifdef SERIAL_DEBUG_MSG
+          SerialWriteStrLn("MSP_SET_BOX");
+        #endif
+        
       #endif
       break;
     case MSP_SET_RC_TUNING:
@@ -674,8 +689,18 @@ void evaluateCommand(uint8_t c) {
     case MSP_BOX:
       #if EXTAUX
         s_struct((uint8_t*)&conf.activate[0],4*CHECKBOXITEMS);
+
+        #ifdef SERIAL_DEBUG_MSG
+          SerialWriteStrLn("MSP_BOX > EXTAUX");
+        #endif
+        
       #else
         s_struct((uint8_t*)&conf.activate[0],2*CHECKBOXITEMS);
+
+        #ifdef SERIAL_DEBUG_MSG
+          SerialWriteStrLn("MSP_BOX");
+        #endif
+        
       #endif
       break;
     case MSP_BOXNAMES:

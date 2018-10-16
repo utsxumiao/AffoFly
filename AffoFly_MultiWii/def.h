@@ -373,12 +373,15 @@
 // * 30/09/18 by Chan
 // SERVO_1_PINMODE is changed to use pin 3
 //
-// * 12/10/18 by Chan
-// Reinstated previous settings
+// * 13/10/18 by Chan
+// SERVO_6_PINMODE is changed to use pin A0
 // ------------------------
-  #define SERVO_1_PINMODE            DDRC |= 1<<0; // pin A0  // TILT_PITCH - WING left
-  #define SERVO_1_PIN_HIGH           PORTC |= 1<<0;
-  #define SERVO_1_PIN_LOW            PORTC &= ~(1<<0);
+  #define SERVO_1_PINMODE            DDRD|= 1<<3; // pin 3    // TRI REAR - BI RIGHT
+  #define SERVO_1_PIN_HIGH           PORTD|= 1<<3;
+  #define SERVO_1_PIN_LOW            PORTD &= ~(1<<3);
+//  #define SERVO_1_PINMODE            DDRC |= 1<<0; // pin A0  // TILT_PITCH - WING left
+//  #define SERVO_1_PIN_HIGH           PORTC |= 1<<0;
+//  #define SERVO_1_PIN_LOW            PORTC &= ~(1<<0);
   #define SERVO_2_PINMODE            DDRC |= 1<<1; // pin A1  // TILT_ROLL  - WING right
   #define SERVO_2_PIN_HIGH           PORTC |= 1<<1;
   #define SERVO_2_PIN_LOW            PORTC &= ~(1<<1);
@@ -393,9 +396,12 @@
   #define SERVO_5_PINMODE            DDRB |= 1<<3; // pin 11  // BI LEFT
   #define SERVO_5_PIN_HIGH           PORTB |= 1<<3;
   #define SERVO_5_PIN_LOW            PORTB &= ~(1<<3);
-  #define SERVO_6_PINMODE            DDRD|= 1<<3; // pin 3    // TRI REAR - BI RIGHT
-  #define SERVO_6_PIN_HIGH           PORTD|= 1<<3;
-  #define SERVO_6_PIN_LOW            PORTD &= ~(1<<3);
+  #define SERVO_6_PINMODE            DDRC |= 1<<0; // pin A0  // TILT_PITCH - WING left
+  #define SERVO_6_PIN_HIGH           PORTC |= 1<<0;
+  #define SERVO_6_PIN_LOW            PORTC &= ~(1<<0);
+//  #define SERVO_6_PINMODE            DDRD|= 1<<3; // pin 3    // TRI REAR - BI RIGHT
+//  #define SERVO_6_PIN_HIGH           PORTD|= 1<<3;
+//  #define SERVO_6_PIN_LOW            PORTD &= ~(1<<3);
   #define SERVO_7_PINMODE            DDRB |= 1<<2; // pin 10  // new
   #define SERVO_7_PIN_HIGH           PORTB |= 1<<2;
   #define SERVO_7_PIN_LOW            PORTB &= ~(1<<2);

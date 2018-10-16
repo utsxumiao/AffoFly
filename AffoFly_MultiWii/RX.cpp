@@ -473,11 +473,11 @@ uint16_t readRawRC(uint8_t chan) {
   #endif
 
   #ifdef SERIAL_DEBUG_MSG
-    if (chan == 3)  {
+//    if (chan == 3)  {
 //      SerialWriteNum(chan);
 //      SerialWriteStr(" : ");
 //      SerialWriteNumLn(data);
-    }
+//    }
   #endif
   
   return data; // We return the value correctly copied when the IRQ's where disabled
@@ -523,13 +523,13 @@ void computeRC() {
       }
 
         #ifdef SERIAL_DEBUG_MSG
-          if (chan == 3)  {
+//          if (chan == 4)  {
 //            SerialWriteNum(chan);
 //            SerialWriteStr(" : ");
 //            SerialWriteNum(rcData[chan]);
 //            SerialWriteStr(" - ");
 //            SerialWriteNumLn(rcSerial[chan]);
-          }
+//          }
         #endif
       
     }

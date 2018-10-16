@@ -259,8 +259,8 @@
 
   /***********************          Cam Stabilisation             ***********************/
     /* The following lines apply only for a pitch/roll tilt stabilization system. Uncomment the first or second line to activate it */
-    #define SERVO_MIX_TILT
-    //#define SERVO_TILT
+//    #define SERVO_MIX_TILT
+    #define SERVO_TILT
 
     /* camera trigger function : activated via Rc Options in the GUI, servo output=A2 on promini */
     // trigger interval can be changed via (*GUI*) or via AUX channel
@@ -1177,7 +1177,7 @@ Also note, that maqgnetic declination changes with time, so recheck your value e
     // SERIAL_DEBUG_MSG - Message to send to the Serial Monitor
     // ----------------------------
     #define SERIAL_DEBUG_PORT   0
-//    #define SERIAL_DEBUG_MSG
+    #define SERIAL_DEBUG_MSG
 
   /********************************************************************/
   /****           ESCs calibration                                 ****/

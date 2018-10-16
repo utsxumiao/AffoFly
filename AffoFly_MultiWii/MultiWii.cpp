@@ -569,6 +569,11 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
   }
 
   #if !(defined(SERIAL_RX) && defined(PROMINI))  //Only one serial port on ProMini.  Skip serial com if SERIAL RX in use. Note: Spek code will auto-call serialCom if GUI data detected on serial0.
+
+      #ifdef SERIAL_DEBUG_MSG
+//        SerialWriteStrLn("serialCom()");
+      #endif
+      
     serialCom();
   #endif
 
@@ -1148,8 +1153,33 @@ void loop () {
       auxState |= (rcData[AUX1+i]<1300)<<(3*i) | (1300<rcData[AUX1+i] && rcData[AUX1+i]<1700)<<(3*i+1) | (rcData[AUX1+i]>1700)<<(3*i+2);
     #endif
 
-    for(i=0;i<CHECKBOXITEMS;i++)
-      rcOptions[i] = (auxState & conf.activate[i])>0;
+    #ifdef SERIAL_DEBUG_MSG
+//      SerialWriteNumLn(auxState);
+    #endif
+
+    #ifdef TEST_DEBUG_RX
+      // --------------------
+      // * 14/10/18 by Chan
+      // Removed check with conf.activate[i] since the values are coming from SerialCom() which we don't have spec for
+      // It looks like serialCom() is used between a transmitter and MultiWii.
+      // --------------------
+      for(i=0;i<CHECKBOXITEMS;i++)  {
+        rcOptions[AUX1+i] = ((auxState>>(3*i)) & 0x04)>0;  // rcOptions[i] will be 1 if rcData[AUX1 + i] > 1700, otherwise 0
+      }
+    #else
+      for(i=0;i<CHECKBOXITEMS;i++)
+        rcOptions[i] = (auxState & conf.activate[i])>0;
+    #endif
+
+//    #ifdef SERIAL_DEBUG_MSG
+//      for(i=0;i<CHECKBOXITEMS;i++)  {
+//        SerialWriteNum(rcOptions[i]);
+////        SerialWriteNum(conf.activate[i]);
+//        SerialWriteStr(", ");
+//      }
+//
+//      SerialWriteStrLn(" ");
+//    #endif
 
     // note: if FAILSAFE is disable, failsafeCnt > 5*FAILSAFE_DELAY is always false
     #if ACC

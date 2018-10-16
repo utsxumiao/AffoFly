@@ -188,6 +188,15 @@ void writeServos() {
         for(uint8_t i = (SEC_SERVO_FROM-1); i < SEC_SERVO_TO; i++){
           #if defined(PROMINI) || (defined(PROMICRO) && defined(HWPWM6)) || (defined(MEGA) && defined(MEGA_HW_PWM_SERVOS))
             atomicServo[i] = (servo[i]-1000)>>2;
+
+            #ifdef SERIAL_DEBUG_MSG
+//              SerialWriteNum(i);
+//              SerialWriteStr(" : ");
+//              SerialWriteNum(servo[i]);
+//              SerialWriteStr(" : ");
+//              SerialWriteNumLn(atomicServo[i]);
+            #endif
+            
           #else
             atomicServo[i] = (servo[i]-1000)<<4;
           #endif
@@ -448,21 +457,17 @@ void writeMotors() { // [1000;2000] => [125;250]
       atomicPWM_PIN5_lowState  = 255-atomicPWM_PIN5_highState;
     #else
       #if (NUMBER_MOTOR > 1)
-        // ------------------------
-        // * 30/09/18 by Chan
-        // pin 10 is changed to be used with NRF24_RX below inside "#if (NUMBER_MOTOR > 3)" 
-        // ------------------------
-//        #ifdef EXT_MOTOR_RANGE            // 490Hz
-//          OCR1B = ((motor[1]>>2) - 250);
-//        #elif defined(EXT_MOTOR_32KHZ)
-//          OCR1B = (motor[1] - 1000) >> 2; //  pin 10
-//        #elif defined(EXT_MOTOR_4KHZ)
-//          OCR1B = (motor[1] - 1000) << 1;
-//        #elif defined(EXT_MOTOR_1KHZ)
-//          OCR1B = (motor[1] - 1000) << 3;
-//        #else
-//          OCR1B = motor[1]>>3; //  pin 10
-//        #endif
+        #ifdef EXT_MOTOR_RANGE            // 490Hz
+          OCR1B = ((motor[1]>>2) - 250);
+        #elif defined(EXT_MOTOR_32KHZ)
+          OCR1B = (motor[1] - 1000) >> 2; //  pin 10
+        #elif defined(EXT_MOTOR_4KHZ)
+          OCR1B = (motor[1] - 1000) << 1;
+        #elif defined(EXT_MOTOR_1KHZ)
+          OCR1B = (motor[1] - 1000) << 3;
+        #else
+          OCR1B = motor[1]>>3; //  pin 10
+        #endif
       #endif
       #if (NUMBER_MOTOR > 2)
         #ifdef EXT_MOTOR_RANGE            // 490Hz
@@ -479,36 +484,35 @@ void writeMotors() { // [1000;2000] => [125;250]
       #endif
     #endif
     #if (NUMBER_MOTOR > 3)
-      // ------------------------
-      // * 30/09/18 by Chan
-      // pin 10 is used for a motor here
-      // ------------------------
-      #ifdef EXT_MOTOR_RANGE            // 490Hz
-        OCR1B = ((motor[1]>>2) - 250);
-      #elif defined(EXT_MOTOR_32KHZ)
-        OCR1B = (motor[1] - 1000) >> 2; //  pin 10
-      #elif defined(EXT_MOTOR_4KHZ)
-        OCR1B = (motor[1] - 1000) << 1;
-      #elif defined(EXT_MOTOR_1KHZ)
-        OCR1B = (motor[1] - 1000) << 3;
+      #if defined(NRF24_RX)
+        // ------------------------
+        // * 30/09/18 by Chan
+        // pin 10 is used for a motor here when NRF24_RX is used
+        // ------------------------
+        #ifdef EXT_MOTOR_RANGE            // 490Hz
+          OCR1B = ((motor[3]>>2) - 250);
+        #elif defined(EXT_MOTOR_32KHZ)
+          OCR1B = (motor[3] - 1000) >> 2; //  pin 10
+        #elif defined(EXT_MOTOR_4KHZ)
+          OCR1B = (motor[3] - 1000) << 1;
+        #elif defined(EXT_MOTOR_1KHZ)
+          OCR1B = (motor[3] - 1000) << 3;
+        #else
+          OCR1B = motor[3]>>3; //  pin 10
+        #endif
       #else
-        OCR1B = motor[1]>>3; //  pin 10
+        #ifdef EXT_MOTOR_RANGE            // 490Hz
+          OCR2B = ((motor[3]>>2) - 250);
+        #elif defined(EXT_MOTOR_32KHZ)
+          OCR2B = (motor[3] - 1000) >> 2; //  pin 3
+        #elif defined(EXT_MOTOR_4KHZ)
+          OCR2B = (motor[3] - 1000) >> 2;
+        #elif defined(EXT_MOTOR_1KHZ)
+          OCR2B = (motor[3] - 1000) >> 2;
+        #else
+          OCR2B = motor[3]>>3; //  pin 3
+        #endif
       #endif
-      // ------------------------
-      // * 30/09/18 by Chan
-      // pin 3 is saved to be used for a Servo
-      // ------------------------
-//      #ifdef EXT_MOTOR_RANGE            // 490Hz
-//        OCR2B = ((motor[3]>>2) - 250);
-//      #elif defined(EXT_MOTOR_32KHZ)
-//        OCR2B = (motor[3] - 1000) >> 2; //  pin 3
-//      #elif defined(EXT_MOTOR_4KHZ)
-//        OCR2B = (motor[3] - 1000) >> 2;
-//      #elif defined(EXT_MOTOR_1KHZ)
-//        OCR2B = (motor[3] - 1000) >> 2;
-//      #else
-//        OCR2B = motor[3]>>3; //  pin 3
-//      #endif
     #endif
     #if (NUMBER_MOTOR > 4)
       #if (NUMBER_MOTOR == 6) && !defined(SERVO)
@@ -713,27 +717,22 @@ void initOutput() {
       initializeSoftPWM(); // use pin 6,5 instead of 10,11 for nRF24L01 receiver
     #else
       #if (NUMBER_MOTOR > 1)
-        // ------------------------
-        // * 30/09/18 by Chan
-        // pin 10 is changed to be used with NRF24_RX below inside "#if (NUMBER_MOTOR > 3)" 
-        // ------------------------
-//        TCCR1A |= _BV(COM1B1); // connect pin 10 to timer 1 channel B
+        TCCR1A |= _BV(COM1B1); // connect pin 10 to timer 1 channel B
       #endif
       #if (NUMBER_MOTOR > 2)
         TCCR2A |= _BV(COM2A1); // connect pin 11 to timer 2 channel A
       #endif
     #endif
     #if (NUMBER_MOTOR > 3)
-      // ------------------------
-      // * 30/09/18 by Chan
-      // pin 10 is used here for a motor
-      // ------------------------
-      TCCR1A |= _BV(COM1B1); // connect pin 10 to timer 1 channel B
-      // ------------------------
-      // * 30/09/18 by Chan
-      // pin 3 is saved to be used for a Servo
-      // ------------------------
-//      TCCR2A |= _BV(COM2B1); // connect pin 3 to timer 2 channel B
+      #if defined(NRF24_RX)
+        // ------------------------
+        // * 30/09/18 by Chan
+        // pin 10 is used here for a motor instead of pin 3, when NRF24_RX is used
+        // ------------------------
+        TCCR1A |= _BV(COM1B1); // connect pin 10 to timer 1 channel B
+      #else
+        TCCR2A |= _BV(COM2B1); // connect pin 3 to timer 2 channel B
+      #endif
     #endif
     #if (NUMBER_MOTOR > 4)  // PIN 5 & 6 or A0 & A1
       initializeSoftPWM();
@@ -811,8 +810,8 @@ void initializeServo() {
 //      TIMSK0 |= (1<<OCIE0A); // Enable CTC interrupt
 //      #define SERVO_ISR TIMER0_COMPA_vect
 //      #define SERVO_CHANNEL OCR0A
+
       TCCR2A = 0; // normal counting mode
-//      TCCR2B =  (1<<CS20) | (1<<CS21);
       TIMSK2 |= (1<<OCIE2A); // Enable CTC interrupt
       #define SERVO_ISR TIMER2_COMPA_vect
       #define SERVO_CHANNEL OCR2A
@@ -1542,12 +1541,69 @@ void mixTable() {
   /****************************                Cam stabilize Servos             *******************************/
 
   #if defined(SERVO_TILT)
-    servo[0] = get_middle(0);
-    servo[1] = get_middle(1);
+
+        #ifdef SERIAL_DEBUG_MSG
+//          SerialWriteNum(servo[0]);
+//          SerialWriteStr(" ::: ");
+//          SerialWriteNumLn(servo[1]);
+//          SerialWriteStrLn(" ");
+        #endif
+
+    // ------------------------
+    // * 16/10/18 by Chan
+    // Force assign Aux1 and Aux2 values to servo[0] and servo[1] respectively.
+    // This is a hack to connect Aux buttons to servos.
+    // There might be a better way to do this but this is what I found suitable for now.
+    // The code below works with a button or a dial.
+    // ------------------------
+    #if defined(NRF24_RX)
+      servo[0] = rcData[AUX1];
+      servo[1] = rcData[AUX2];
+    #else
+      servo[0] = get_middle(0);
+      servo[1] = get_middle(1);
+    #endif
+    
     if (rcOptions[BOXCAMSTAB]) {
       servo[0] += ((int32_t)conf.servoConf[0].rate * att.angle[PITCH]) /50L;
       servo[1] += ((int32_t)conf.servoConf[1].rate * att.angle[ROLL])  /50L;
     }
+
+    #ifdef TEST_DEBUG_RX
+//      if (rcOptions[AUX1]) {
+//        
+        #ifdef SERIAL_DEBUG_MSG
+//          SerialWriteNum(servo[0]);
+//          SerialWriteStr(" : ");
+//          SerialWriteNumLn(servo[1]);
+//                  
+//          SerialWriteNum((int32_t)conf.servoConf[0].rate);
+//          SerialWriteStr(" - ");
+//          SerialWriteNum(att.angle[PITCH]);
+//          SerialWriteStr(" , ");
+//          SerialWriteNum((int32_t)conf.servoConf[1].rate);
+//          SerialWriteStr(" - ");
+//          SerialWriteNumLn(att.angle[ROLL]);
+//          SerialWriteStrLn(" ");
+        #endif
+//
+//        servo[0] = 2000;
+//
+////        servo[0] += ((int32_t)conf.servoConf[0].rate * att.angle[PITCH]) /50L;
+//        servo[1] += ((int32_t)conf.servoConf[1].rate * att.angle[ROLL])  /50L;
+//
+//      }
+//      else  {
+//        servo[0] = 1000;
+//      }
+
+      #ifdef SERIAL_DEBUG_MSG
+//          SerialWriteNum(servo[0]);
+//          SerialWriteStr(" - ");
+//          SerialWriteNumLn(servo[1]);
+      #endif
+    
+    #endif
   #endif
 
   #ifdef SERVO_MIX_TILT
@@ -1601,6 +1657,19 @@ void mixTable() {
     for(i=SERVO_START-1; i<SERVO_END; i++) {
       if(i < 2) {
         servo[i] = map(servo[i], 1020,2000, conf.servoConf[i].min, conf.servoConf[i].max);   // servo travel scaling, only for gimbal servos
+
+        #ifdef SERIAL_DEBUG_MSG
+//          SerialWriteNum(i);
+//          SerialWriteStr(" : ");
+//          SerialWriteNum(servo[i]);
+//          SerialWriteStr(" - ( ");
+//          SerialWriteNum(conf.servoConf[i].min);
+//          SerialWriteStr(" : ");
+//          SerialWriteNum(conf.servoConf[i].max);
+//          SerialWriteStrLn(" ) ");
+        #endif
+
+        
       }
     #if defined(HELICOPTER) && (YAWMOTOR)
       if(i != 5) // not limit YawMotor
