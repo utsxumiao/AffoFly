@@ -1177,7 +1177,7 @@ Also note, that maqgnetic declination changes with time, so recheck your value e
     // SERIAL_DEBUG_MSG - Message to send to the Serial Monitor
     // ----------------------------
     #define SERIAL_DEBUG_PORT   0
-    #define SERIAL_DEBUG_MSG
+//    #define SERIAL_DEBUG_MSG
 
   /********************************************************************/
   /****           ESCs calibration                                 ****/

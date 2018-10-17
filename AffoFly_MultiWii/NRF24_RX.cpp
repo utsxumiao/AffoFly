@@ -33,9 +33,9 @@ void resetRF24Data()
   nrf24Data.Pitch = 1500;
   nrf24Data.Roll = 1500;
   nrf24Data.Aux1 = 1000;
-  nrf24Data.Aux2 = 2000;  // set to 2000 for testing
+  nrf24Data.Aux2 = 1000;
   nrf24Data.Aux3 = 1000;
-  nrf24Data.Aux4 = 2000;  // set to 2000 for testing
+  nrf24Data.Aux4 = 1000;
   nrf24Data.Aux5 = 1000;
   nrf24Data.Aux6 = 1000;
 }
@@ -117,10 +117,11 @@ void NRF24_Read_RC() {
         testAuxButtonCount++;
 
         if ((testAuxButtonCount % 50) == 0) {
+          // keep switching on/off all buttons
           nrf24Data.Aux1 = (2000 - nrf24Data.Aux1) + 1000;
           nrf24Data.Aux2 = (2000 - nrf24Data.Aux2) + 1000;
-//          nrf24Data.Aux3 = (2000 - nrf24Data.Aux3) + 1000;
-//          nrf24Data.Aux4 = (2000 - nrf24Data.Aux4) + 1000;
+          nrf24Data.Aux3 = (2000 - nrf24Data.Aux3) + 1000;
+          nrf24Data.Aux4 = (2000 - nrf24Data.Aux4) + 1000;
 
           #ifdef SERIAL_DEBUG_MSG
 //            SerialWriteNum(nrf24Data.Aux1);
@@ -131,11 +132,6 @@ void NRF24_Read_RC() {
         }
 
         if (testAuxButtonCount > 999) testAuxButtonCount = 0;
-
-//        nrf24Data.Aux1 = 2000;
-//        nrf24Data.Aux2 = 1000;
-//        nrf24Data.Aux3 = 2000;
-//        nrf24Data.Aux4 = 1000;
         
         testRxIndex = 500;
       }

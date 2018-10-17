@@ -1554,7 +1554,7 @@ void mixTable() {
     // Force assign Aux1 and Aux2 values to servo[0] and servo[1] respectively.
     // This is a hack to connect Aux buttons to servos.
     // There might be a better way to do this but this is what I found suitable for now.
-    // The code below works with a button or a dial.
+    // The code below works with a button or a dial (pot).
     // ------------------------
     #if defined(NRF24_RX)
       servo[0] = rcData[AUX1];
@@ -1562,12 +1562,12 @@ void mixTable() {
     #else
       servo[0] = get_middle(0);
       servo[1] = get_middle(1);
-    #endif
     
-    if (rcOptions[BOXCAMSTAB]) {
-      servo[0] += ((int32_t)conf.servoConf[0].rate * att.angle[PITCH]) /50L;
-      servo[1] += ((int32_t)conf.servoConf[1].rate * att.angle[ROLL])  /50L;
-    }
+      if (rcOptions[BOXCAMSTAB]) {
+        servo[0] += ((int32_t)conf.servoConf[0].rate * att.angle[PITCH]) /50L;
+        servo[1] += ((int32_t)conf.servoConf[1].rate * att.angle[ROLL])  /50L;
+      }
+    #endif
 
     #ifdef TEST_DEBUG_RX
 //      if (rcOptions[AUX1]) {
