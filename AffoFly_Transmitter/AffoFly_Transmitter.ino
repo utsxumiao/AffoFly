@@ -314,13 +314,13 @@ void readEeprom() {
 void putRxConfigs() {
   for (int i = CURRENT_RX_ID_LOWER_BOUNDARY; i <= CURRENT_RX_ID_UPPER_BOUNDARY; i++) {
     uint16_t startAddress = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (i - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
-    RxConfigData rxConfig;
-    rxConfig.Id = i;
-    rxConfig.RadioChannel = 100;
-    rxConfig.ThrottleTrim = 0;
-    rxConfig.YawTrim = 0;
-    rxConfig.PitchTrim = 0;
-    rxConfig.RollTrim = 0;
+    RxConfigData rxConfigLocal;
+    rxConfigLocal.Id = i;
+    rxConfigLocal.RadioChannel = 100;
+    rxConfigLocal.ThrottleTrim = 0;
+    rxConfigLocal.YawTrim = 0;
+    rxConfigLocal.PitchTrim = 0;
+    rxConfigLocal.RollTrim = 0;
     char rxName[10] = "RX ";
     char rxIdText[3] = "";
     itoa(i, rxIdText, 10);
@@ -329,25 +329,25 @@ void putRxConfigs() {
     }
     strcat(rxName, rxIdText);
     strcat(rxName, "    ");
-    strcpy(rxConfig.Name, rxName);
-    EEPROM.put(startAddress, rxConfig);
+    strcpy(rxConfigLocal.Name, rxName);
+    EEPROM.put(startAddress, rxConfigLocal);
   }
 }
 
 void getRxConfigs() {
   for (int i = CURRENT_RX_ID_LOWER_BOUNDARY; i <= CURRENT_RX_ID_UPPER_BOUNDARY; i++) {
     uint16_t startAddress = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (i - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
-    RxConfigData rxConfig;
-    EEPROM.get(startAddress, rxConfig);
-    RxConfigs[i - 1] = rxConfig;
+    RxConfigData rxConfigLocal;
+    EEPROM.get(startAddress, rxConfigLocal);
+    RxConfigs[i - 1] = rxConfigLocal;
   }
 }
 
 RxConfigData getRxConfig(uint8_t rxId) {
   uint16_t address = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (rxId - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
-  RxConfigData rxConfig;
-  EEPROM.get(address, rxConfig);
-  return rxConfig;
+  RxConfigData rxConfigLocal;
+  EEPROM.get(address, rxConfigLocal);
+  return rxConfigLocal;
 }
 
 void clearEeprom() {
