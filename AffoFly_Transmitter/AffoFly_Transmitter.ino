@@ -1123,6 +1123,12 @@ void refreshControlScreen(unsigned long currentMillis) {
   if (currentMillis - ScreenRefreshLastMillis >= ScreenRefreshInterval) {
     ScreenRefreshLastMillis = currentMillis;
     u8g2.firstPage();
+
+    char charA3[] = "A3";
+    char charA4[] = "A4";
+    char charA5[] = "A5";
+    char charA6[] = "A6";
+    
     do {
       drawBattery(4200, 3400, BatteryVoltage, 0);
 #ifdef SHOW_RATE
@@ -1132,10 +1138,6 @@ void refreshControlScreen(unsigned long currentMillis) {
       drawRx();
       drawFlightMode();
       drawTrim();
-      char charA3[] = "A3";
-      char charA4[] = "A4";
-      char charA5[] = "A5";
-      char charA6[] = "A6";
       drawAuxStatus(75, 28, charA3, data.Aux3);
       drawAuxStatus(75, 40, charA4, data.Aux4);
       drawAuxStatus(75, 52, charA5, data.Aux5);
