@@ -249,7 +249,7 @@ void setup() {
     dumpEeprom();
 #endif
   } else {
-    rxConfig = getRxConfig(CurrentRxId);
+    getRxConfig(CurrentRxId, &rxConfig);
     radio.begin();
     radio.setPALevel(RadioPaLevels[RadioPaLevelIndex].PaValue);
     radio.setAutoAck(false);
@@ -339,15 +339,15 @@ void getRxConfigs() {
     uint16_t startAddress = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (i - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
     RxConfigData rxConfigLocal;
     EEPROM.get(startAddress, rxConfigLocal);
-    RxConfigs[i - 1] = rxConfigLocal;
+    memcpy(&RxConfigs[i - 1], &rxConfigLocal, sizeof(RxConfigData));
   }
 }
 
-RxConfigData getRxConfig(uint8_t rxId) {
+void getRxConfig(uint8_t rxId, RxConfigData* pRxConfig) {
   uint16_t address = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (rxId - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
   RxConfigData rxConfigLocal;
   EEPROM.get(address, rxConfigLocal);
-  return rxConfigLocal;
+  memcpy(pRxConfig, &rxConfigLocal, sizeof(RxConfigData));
 }
 
 void clearEeprom() {
