@@ -1124,10 +1124,10 @@ void refreshControlScreen(unsigned long currentMillis) {
     ScreenRefreshLastMillis = currentMillis;
     u8g2.firstPage();
 
-    char charA3[] = "A3";
-    char charA4[] = "A4";
-    char charA5[] = "A5";
-    char charA6[] = "A6";
+    char charA3[3] = "A3";
+    char charA4[3] = "A4";
+    char charA5[3] = "A5";
+    char charA6[3] = "A6";
     
     do {
       drawBattery(4200, 3400, BatteryVoltage, 0);
