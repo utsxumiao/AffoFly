@@ -1060,12 +1060,12 @@ void drawFunctionRxSelectionScreen() {
 
   for (uint8_t i = 0; i < pageSize; i++) {
     if (startRxId + i > CURRENT_RX_ID_UPPER_BOUNDARY) break;
-    char finalText[15] = "";
+    char finalTextInner[15] = "";
     uint8_t rxId = RxConfigs[startRxId + i - 1].Id;
-    getRxIdStr(finalText, rxId);
-    strcat(finalText, "  ");
-    strcat(finalText, RxConfigs[startRxId + i - 1].Name);
-    u8g2.drawStr(menuItemStartX, menuItemStartY, finalText);
+    getRxIdStr(finalTextInner, rxId);
+    strcat(finalTextInner, "  ");
+    strcat(finalTextInner, RxConfigs[startRxId + i - 1].Name);
+    u8g2.drawStr(menuItemStartX, menuItemStartY, finalTextInner);
     menuItemStartY += lineHeight;
   }
   uint8_t selectionBoxStartX = 1;
