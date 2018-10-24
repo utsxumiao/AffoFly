@@ -249,7 +249,7 @@ void setup() {
     dumpEeprom();
 #endif
   } else {
-    rxConfig = getRxConfig(CurrentRxId);
+    getRxConfig(CurrentRxId, &rxConfig);
     radio.begin();
     radio.setPALevel(RadioPaLevels[RadioPaLevelIndex].PaValue);
     radio.setAutoAck(false);
@@ -314,13 +314,13 @@ void readEeprom() {
 void putRxConfigs() {
   for (int i = CURRENT_RX_ID_LOWER_BOUNDARY; i <= CURRENT_RX_ID_UPPER_BOUNDARY; i++) {
     uint16_t startAddress = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (i - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
-    RxConfigData rxConfig;
-    rxConfig.Id = i;
-    rxConfig.RadioChannel = 100;
-    rxConfig.ThrottleTrim = 0;
-    rxConfig.YawTrim = 0;
-    rxConfig.PitchTrim = 0;
-    rxConfig.RollTrim = 0;
+    RxConfigData rxConfigLocal;
+    rxConfigLocal.Id = i;
+    rxConfigLocal.RadioChannel = 100;
+    rxConfigLocal.ThrottleTrim = 0;
+    rxConfigLocal.YawTrim = 0;
+    rxConfigLocal.PitchTrim = 0;
+    rxConfigLocal.RollTrim = 0;
     char rxName[10] = "RX ";
     char rxIdText[3] = "";
     itoa(i, rxIdText, 10);
@@ -329,25 +329,25 @@ void putRxConfigs() {
     }
     strcat(rxName, rxIdText);
     strcat(rxName, "    ");
-    strcpy(rxConfig.Name, rxName);
-    EEPROM.put(startAddress, rxConfig);
+    strcpy(rxConfigLocal.Name, rxName);
+    EEPROM.put(startAddress, rxConfigLocal);
   }
 }
 
 void getRxConfigs() {
   for (int i = CURRENT_RX_ID_LOWER_BOUNDARY; i <= CURRENT_RX_ID_UPPER_BOUNDARY; i++) {
     uint16_t startAddress = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (i - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
-    RxConfigData rxConfig;
-    EEPROM.get(startAddress, rxConfig);
-    RxConfigs[i - 1] = rxConfig;
+    RxConfigData rxConfigLocal;
+    EEPROM.get(startAddress, rxConfigLocal);
+    memcpy(&RxConfigs[i - 1], &rxConfigLocal, sizeof(RxConfigData));
   }
 }
 
-RxConfigData getRxConfig(uint8_t rxId) {
+void getRxConfig(uint8_t rxId, RxConfigData* pRxConfig) {
   uint16_t address = (uint16_t)RX_CONFIG_ALLOCATED_BYTES * (rxId - 1) + RX_CONFIG_EEPROM_START_ADDRESS;
-  RxConfigData rxConfig;
-  EEPROM.get(address, rxConfig);
-  return rxConfig;
+  RxConfigData rxConfigLocal;
+  EEPROM.get(address, rxConfigLocal);
+  memcpy(pRxConfig, &rxConfigLocal, sizeof(RxConfigData));
 }
 
 void clearEeprom() {
@@ -1060,12 +1060,12 @@ void drawFunctionRxSelectionScreen() {
 
   for (uint8_t i = 0; i < pageSize; i++) {
     if (startRxId + i > CURRENT_RX_ID_UPPER_BOUNDARY) break;
-    char finalText[15] = "";
+    char finalTextInner[15] = "";
     uint8_t rxId = RxConfigs[startRxId + i - 1].Id;
-    getRxIdStr(finalText, rxId);
-    strcat(finalText, "  ");
-    strcat(finalText, RxConfigs[startRxId + i - 1].Name);
-    u8g2.drawStr(menuItemStartX, menuItemStartY, finalText);
+    getRxIdStr(finalTextInner, rxId);
+    strcat(finalTextInner, "  ");
+    strcat(finalTextInner, RxConfigs[startRxId + i - 1].Name);
+    u8g2.drawStr(menuItemStartX, menuItemStartY, finalTextInner);
     menuItemStartY += lineHeight;
   }
   uint8_t selectionBoxStartX = 1;
@@ -1123,6 +1123,12 @@ void refreshControlScreen(unsigned long currentMillis) {
   if (currentMillis - ScreenRefreshLastMillis >= ScreenRefreshInterval) {
     ScreenRefreshLastMillis = currentMillis;
     u8g2.firstPage();
+
+    char charA3[3] = "A3";
+    char charA4[3] = "A4";
+    char charA5[3] = "A5";
+    char charA6[3] = "A6";
+    
     do {
       drawBattery(4200, 3400, BatteryVoltage, 0);
 #ifdef SHOW_RATE
@@ -1132,10 +1138,6 @@ void refreshControlScreen(unsigned long currentMillis) {
       drawRx();
       drawFlightMode();
       drawTrim();
-      char charA3[] = "A3";
-      char charA4[] = "A4";
-      char charA5[] = "A5";
-      char charA6[] = "A6";
       drawAuxStatus(75, 28, charA3, data.Aux3);
       drawAuxStatus(75, 40, charA4, data.Aux4);
       drawAuxStatus(75, 52, charA5, data.Aux5);

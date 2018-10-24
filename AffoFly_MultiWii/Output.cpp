@@ -18,7 +18,12 @@ void initializeServo();
 // its not possible to change a PWM output pin just by changing the order
 #if defined(PROMINI)
   #if defined(NRF24_RX)
-    uint8_t PWM_PIN[8] = {9,6,5,3,A2,12,10,11};   //move pin 10=>6, pin 11=>5 so free up SPI pins for NRF module, only works for quadcopter.
+    // ------------------------
+    // * 30/09/18 by Chan
+    // pins 9, 10, 6, 5 are used for motors in order to save pin 3 for Servo on Timer2
+    //   pin 11 is used for SPI, but pin 10 which we can use for a motor
+    // ------------------------  
+    uint8_t PWM_PIN[8] = {9,10,6,5,A2,12,3,11};   //move pin 10=>6, pin 11=>5 so free up SPI pins for NRF module, only works for quadcopter.
   #else
     uint8_t PWM_PIN[8] = {9,10,11,3,6,5,A2,12};   //for a quad+: rear,right,left,front
   #endif
@@ -467,16 +472,34 @@ void writeMotors() { // [1000;2000] => [125;250]
       #endif
     #endif
     #if (NUMBER_MOTOR > 3)
-      #ifdef EXT_MOTOR_RANGE            // 490Hz
-        OCR2B = ((motor[3]>>2) - 250);
-      #elif defined(EXT_MOTOR_32KHZ)
-        OCR2B = (motor[3] - 1000) >> 2; //  pin 3
-      #elif defined(EXT_MOTOR_4KHZ)
-        OCR2B = (motor[3] - 1000) >> 2;
-      #elif defined(EXT_MOTOR_1KHZ)
-        OCR2B = (motor[3] - 1000) >> 2;
+      #if defined(NRF24_RX)
+        // ------------------------
+        // * 30/09/18 by Chan
+        // pin 10 is used for a motor here when NRF24_RX is used
+        // ------------------------
+        #ifdef EXT_MOTOR_RANGE            // 490Hz
+          OCR1B = ((motor[3]>>2) - 250);
+        #elif defined(EXT_MOTOR_32KHZ)
+          OCR1B = (motor[3] - 1000) >> 2; //  pin 10
+        #elif defined(EXT_MOTOR_4KHZ)
+          OCR1B = (motor[3] - 1000) << 1;
+        #elif defined(EXT_MOTOR_1KHZ)
+          OCR1B = (motor[3] - 1000) << 3;
+        #else
+          OCR1B = motor[3]>>3; //  pin 10
+        #endif
       #else
-        OCR2B = motor[3]>>3; //  pin 3
+        #ifdef EXT_MOTOR_RANGE            // 490Hz
+          OCR2B = ((motor[3]>>2) - 250);
+        #elif defined(EXT_MOTOR_32KHZ)
+          OCR2B = (motor[3] - 1000) >> 2; //  pin 3
+        #elif defined(EXT_MOTOR_4KHZ)
+          OCR2B = (motor[3] - 1000) >> 2;
+        #elif defined(EXT_MOTOR_1KHZ)
+          OCR2B = (motor[3] - 1000) >> 2;
+        #else
+          OCR2B = motor[3]>>3; //  pin 3
+        #endif
       #endif
     #endif
     #if (NUMBER_MOTOR > 4)
@@ -685,7 +708,15 @@ void initOutput() {
       #endif
     #endif
     #if (NUMBER_MOTOR > 3)
-      TCCR2A |= _BV(COM2B1); // connect pin 3 to timer 2 channel B
+      #if defined(NRF24_RX)
+        // ------------------------
+        // * 30/09/18 by Chan
+        // pin 10 is used here for a motor instead of pin 3, when NRF24_RX is used
+        // ------------------------
+        TCCR1A |= _BV(COM1B1); // connect pin 10 to timer 1 channel B
+      #else
+        TCCR2A |= _BV(COM2B1); // connect pin 3 to timer 2 channel B
+      #endif
     #endif
     #if (NUMBER_MOTOR > 4)  // PIN 5 & 6 or A0 & A1
       initializeSoftPWM();
@@ -754,10 +785,19 @@ void initializeServo() {
 
   #if defined(SERVO_1_HIGH)
     #if defined(PROMINI) || (defined(PROMICRO) && defined(HWPWM6)) // uses timer 0 Comperator A (8 bit)
-      TCCR0A = 0; // normal counting mode
-      TIMSK0 |= (1<<OCIE0A); // Enable CTC interrupt
-      #define SERVO_ISR TIMER0_COMPA_vect
-      #define SERVO_CHANNEL OCR0A
+      // ------------------------
+      // * 30/09/18 by Chan
+      // Timer2 is now used for Servo instead of Timer0
+      // ------------------------
+//      TCCR0A = 0; // normal counting mode
+//      TIMSK0 |= (1<<OCIE0A); // Enable CTC interrupt
+//      #define SERVO_ISR TIMER0_COMPA_vect
+//      #define SERVO_CHANNEL OCR0A
+
+      TCCR2A = 0; // normal counting mode
+      TIMSK2 |= (1<<OCIE2A); // Enable CTC interrupt
+      #define SERVO_ISR TIMER2_COMPA_vect
+      #define SERVO_CHANNEL OCR2A
       #define SERVO_1K_US 250
     #endif
     #if (defined(PROMICRO) && !defined(HWPWM6)) // uses timer 3 Comperator A (11 bit)
